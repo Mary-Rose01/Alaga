@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>ALAGA - Home</title></head>
+<body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+    <h1>HOME SCREEN</h1>
+    <p>Welcome to ALAGA: Senior Citizen Health Intelligence Platform</p>
+   
+
+    {% if user.is_authenticated %}
+        <p>Logged in as: {{ user.username }}</p>
+        <form action="{% url 'logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+    {% endif %}
+</body>
+</html>
