@@ -1,13 +1,78 @@
-<!DOCTYPE html>
-<html>
-<head><title>Login</title></head>
-<body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-    <h2>Login Screen</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Log In</button>
-    </form>
-    <p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign In | ALAGA{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Welcome Back</h2>
+            <p>Access your health records and patient updates</p>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'login' %}" class="auth-form" id="loginForm" novalidate>
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="id_username">Username</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        name="username" 
+                        id="id_username" 
+                        class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                        placeholder="Enter your assigned username" 
+                        required 
+                        autocomplete="username"
+                        value="{{ form.username.value|default:'' }}"
+                    >
+                </div>
+                {% if form.username.errors %}
+                    <span class="field-error">{{ form.username.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <div class="label-row">
+                    <label for="id_password">Password</label>
+                </div>
+                <div class="input-wrapper password-field">
+                    <input 
+                        type="password" 
+                        name="password" 
+                        id="id_password" 
+                        class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
+                        placeholder="••••••••" 
+                        required 
+                        autocomplete="current-password"
+                    >
+                    <button type="button" class="password-toggle" data-target="id_password" aria-label="Toggle password visibility">
+                        👁
+                    </button>
+                </div>
+                {% if form.password.errors %}
+                    <span class="field-error">{{ form.password.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block submit-btn">
+                <span class="btn-text">Log In</span>
+                <span class="btn-spinner hide" aria-hidden="true"></span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Need a worker account? <a href="{% url 'register' %}">Register here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ALAGA | Health Intelligence Platform{% endblock %}</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+   
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="app-body">
+
+    <!-- Top Navigation Bar -->
+    <header class="app-navbar">
+        <div class="nav-container">
+            <a href="{% url 'home' %}" class="brand-logo">
+                <span class="brand-icon">🩺</span>
+                <span class="brand-text">ALAGA</span>
+                <span class="brand-badge">Health Intelligence</span>
+            </a>
+
+            <nav class="nav-links">
+                {% if user.is_authenticated %}
+                    <div class="user-pill">
+                        <span class="user-role">{{ user.get_role_display|default:"Staff" }}</span>
+                        <span class="user-name">{{ user.username }}</span>
+                    </div>
+                    <form method="POST" action="{% url 'logout' %}" class="inline-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-secondary btn-sm">Sign Out</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="nav-link">Sign In</a>
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Register Worker</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <!-- Global Flash Messages -->
+    {% if messages %}
+        <div class="alerts-container">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    <span>{{ message }}</span>
+                    <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Dynamic Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <p>&copy; {% now "Y" %} ALAGA Senior Citizen Health Platform. Built for community care.</p>
+    </footer>
+
+    <!-- Core Interactive Logic -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

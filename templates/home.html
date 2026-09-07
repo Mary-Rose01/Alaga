@@ -1,17 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head><title>ALAGA - Home</title></head>
-<body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-    <h1>HOME SCREEN</h1>
-    <p>Welcome to ALAGA: Senior Citizen Health Intelligence Platform</p>
-   
+{% extends 'base.html' %}
+{% load static %}
 
-    {% if user.is_authenticated %}
-        <p>Logged in as: {{ user.username }}</p>
-        <form action="{% url 'logout' %}" method="post">
-            {% csrf_token %}
-            <button type="submit">Logout</button>
-        </form>
-    {% endif %}
-</body>
-</html>
+{% block title %}Dashboard | ALAGA{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Welcome Banner -->
+    <section class="hero-banner">
+        <div class="hero-content">
+            <h1>Welcome, {{ user.first_name|default:user.username }}!</h1>
+            <p class="hero-subtitle">Senior Citizen Health Intelligence & Monitoring Console</p>
+            <div class="hero-meta">
+                <span class="meta-tag">Role: {{ user.get_role_display }}</span>
+                {% if user.contact_number %}
+                    <span class="meta-tag">Contact: {{ user.contact_number }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

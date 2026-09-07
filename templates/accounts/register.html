@@ -1,22 +1,138 @@
-<!DOCTYPE html>
-<html>
-<head><title>Register</title></head>
-<body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-    <h2>Register Screen</h2>
-    
-    <!-- Add this to see why registration fails -->
-    {% if form.errors %}
-        <div style="color: red; margin-bottom: 15px;">
-            <p><strong>Please fix the errors below:</strong></p>
-            {{ form.non_field_errors }}
-        </div>
-    {% endif %}
+{% extends 'base.html' %}
+{% load static %}
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Sign Up</button>
-    </form>
-    <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
-</body>
-</html>
+{% block title %}Register Worker | ALAGA{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card register-card">
+        <div class="auth-header">
+            <h2>Join ALAGA</h2>
+            <p>Register as a Barangay Health Worker (BHW) or Municipal Health Officer (MHO)</p>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'register' %}" class="auth-form" id="registerForm" novalidate>
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <!-- Username -->
+                <div class="form-group">
+                    <label for="id_username">Username <span class="required">*</span></label>
+                    <input 
+                        type="text" 
+                        name="username" 
+                        id="id_username" 
+                        class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                        value="{{ form.username.value|default:'' }}" 
+                        placeholder="e.g., maria_santos" 
+                        required
+                    >
+                    {% if form.username.errors %}
+                        <span class="field-error">{{ form.username.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="id_email">Email Address</label>
+                    <input 
+                        type="email" 
+                        name="email" 
+                        id="id_email" 
+                        class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                        value="{{ form.email.value|default:'' }}" 
+                        placeholder="worker@barangay.gov.ph"
+                    >
+                    {% if form.email.errors %}
+                        <span class="field-error">{{ form.email.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Role Selection -->
+                <div class="form-group">
+                    <label for="id_role">Assigned Role <span class="required">*</span></label>
+                    <select name="role" id="id_role" class="form-control select-control {% if form.role.errors %}is-invalid{% endif %}" required>
+                        <option value="BHW" {% if form.role.value == 'BHW' %}selected{% endif %}>Barangay Health Worker (BHW)</option>
+                        <option value="MHO" {% if form.role.value == 'MHO' %}selected{% endif %}>Municipal Health Officer (MHO)</option>
+                    </select>
+                    {% if form.role.errors %}
+                        <span class="field-error">{{ form.role.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Contact Number -->
+                <div class="form-group">
+                    <label for="id_contact_number">Mobile Contact</label>
+                    <input 
+                        type="tel" 
+                        name="contact_number" 
+                        id="id_contact_number" 
+                        class="form-control {% if form.contact_number.errors %}is-invalid{% endif %}" 
+                        value="{{ form.contact_number.value|default:'' }}" 
+                        placeholder="0917-000-0000"
+                    >
+                    {% if form.contact_number.errors %}
+                        <span class="field-error">{{ form.contact_number.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="id_password">Password <span class="required">*</span></label>
+                    <div class="input-wrapper password-field">
+                        <input 
+                            type="password" 
+                            name="password" 
+                            id="id_password" 
+                            class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
+                            placeholder="At least 8 characters" 
+                            required
+                        >
+                        <button type="button" class="password-toggle" data-target="id_password" aria-label="Toggle password visibility">👁</button>
+                    </div>
+                    {% if form.password.errors %}
+                        <span class="field-error">{{ form.password.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="form-group">
+                    <label for="id_confirm_password">Confirm Password <span class="required">*</span></label>
+                    <div class="input-wrapper password-field">
+                        <input 
+                            type="password" 
+                            name="confirm_password" 
+                            id="id_confirm_password" 
+                            class="form-control {% if form.confirm_password.errors %}is-invalid{% endif %}" 
+                            placeholder="Re-enter password" 
+                            required
+                        >
+                        <button type="button" class="password-toggle" data-target="id_confirm_password" aria-label="Toggle password visibility">👁</button>
+                    </div>
+                    <span class="validation-hint" id="passwordMatchHint"></span>
+                    {% if form.confirm_password.errors %}
+                        <span class="field-error">{{ form.confirm_password.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block submit-btn mt-4">
+                <span class="btn-text">Complete Registration</span>
+                <span class="btn-spinner hide" aria-hidden="true"></span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{% url 'login' %}">Sign in here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
