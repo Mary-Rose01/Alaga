@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Profile | ALAGA{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <header class="page-header">
+        <div>
+            <h1>User Profile</h1>
+            <p class="subtitle">Manage your account details and role permissions</p>
+        </div>
+        <a href="{% url 'settings' %}" class="btn btn-secondary btn-sm">Edit Settings</a>
+    </header>
+
+    <div class="profile-grid">
+        <!-- Identity Card -->
+        <div class="card profile-card">
+            <div class="avatar-badge">
+                <span>{{ user.username|slice:":2"|upper }}</span>
+            </div>
+            <h2>{{ user.first_name|default:user.username }}</h2>
+            <span class="role-badge">{{ user.get_role_display|default:"Healthcare Staff" }}</span>
+            <p class="user-email">{{ user.email }}</p>
+        </div>
+
+        <!-- Account Details Grid -->
+        <div class="card details-card">
+            <h3>Account Information</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Username</label>
+                    <p>{{ user.username }}</p>
+                </div>
+                <div class="info-item">
+                    <label>Email Address</label>
+                    <p>{{ user.email }}</p>
+                </div>
+                <div class="info-item">
+                    <label>Assigned Role</label>
+                    <p>{{ user.get_role_display|default:"Staff" }}</p>
+                </div>
+                <div class="info-item">
+                    <label>Contact Number</label>
+                    <p>{{ user.contact_number|default:"Not provided" }}</p>
+                </div>
+                <div class="info-item">
+                    <label>Account Status</label>
+                    <p><span class="status-indicator active"></span> Active Healthcare Personnel</p>
+                </div>
+                <div class="info-item">
+                    <label>Member Since</label>
+                    <p>{{ user.date_joined|date:"F d, Y"|default:"Active" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

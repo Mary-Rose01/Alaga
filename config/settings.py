@@ -39,10 +39,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'accounts',
-    'seniors',
-    'visits',
-    'analytics',
+    'apps.accounts',
+    'apps.seniors',
+    'apps.visits',
+    'apps.analytics',
+
+    "apps.login", 
+    "apps.register", 
+    "apps.home", 
+    "apps.user_profile", 
+    "apps.user_settings", 
 ]
 
 MIDDLEWARE = [
@@ -144,3 +150,5 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
+
+LOGIN_URL = 'login'

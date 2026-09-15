@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Settings | ALAGA{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <header class="page-header">
+        <div>
+            <h1>Account Settings</h1>
+            <p class="subtitle">System preferences and notification configurations</p>
+        </div>
+        <a href="{% url 'profile' %}" class="btn btn-secondary btn-sm">View Profile</a>
+    </header>
+
+    <div class="settings-stack">
+        <!-- Notification Settings -->
+        <div class="card settings-card">
+            <h3>Health Notification Preferences</h3>
+            <div class="setting-row">
+                <div>
+                    <strong>Critical Senior Alerts</strong>
+                    <p>Receive immediate alerts for high-risk health metrics.</p>
+                </div>
+                <input type="checkbox" class="toggle-switch" checked>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <strong>Daily Visit Summaries</strong>
+                    <p>Get a morning digest of scheduled community visits.</p>
+                </div>
+                <input type="checkbox" class="toggle-switch" checked>
+            </div>
+        </div>
+
+        <!-- System & Display Preferences -->
+        <div class="card settings-card">
+            <h3>System Preferences</h3>
+            <div class="setting-row">
+                <div>
+                    <strong>High Contrast Mode</strong>
+                    <p>Enhance legibility during field visits under bright sunlight.</p>
+                </div>
+                <input type="checkbox" class="toggle-switch">
+            </div>
+        </div>
+
+        <!-- Account Security -->
+        <div class="card settings-card danger-zone">
+            <h3>Account Security</h3>
+            <div class="setting-row">
+                <div>
+                    <strong>Session Management</strong>
+                    <p>Log out of all active sessions across registered field devices.</p>
+                </div>
+                <form method="POST" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">Sign Out Everywhere</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
