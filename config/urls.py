@@ -24,4 +24,7 @@ urlpatterns = [
     path('', include('apps.home.urls')),
     path('', include('apps.user_profile.urls')),
     path('', include('apps.user_settings.urls')),
+    path('', include('apps.visits.urls')),
+    path('', include('apps.seniors.urls')),
+    path('', include('apps.analytics.urls')),
 ]
