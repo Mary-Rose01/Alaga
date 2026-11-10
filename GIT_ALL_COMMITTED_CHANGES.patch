@@ -1,0 +1,775 @@
+diff --git a/BASELINE_COMMIT.txt b/BASELINE_COMMIT.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..623cb659f0b9559cce2e73151dadb1845656d731
+GIT binary patch
+literal 234
+zcmXYry9&Zk5JXQc_z&qtFo`jbPQgwT6tR?O5($Wfik084o&>q<?9S}$-Ti)QYGOh$
+zp|nalllu~?o^{=nDUmtRm(ehhWt?>6{bVe!R3f#2x3OZ*LY{JD&yFQq)eUR$Adi^+
+zol*bWjIlWvL$?HCO3`mC+#9Qm>}SU0Ki7D1$x~Or%ldBJdV9%L<so*g<;H~}1Ac>r
+BAlCo@
+
+literal 0
+HcmV?d00001
+
+diff --git a/apps/analytics/urls.py b/apps/analytics/urls.py
+new file mode 100644
+index 0000000..44fc1d0
+--- /dev/null
++++ b/apps/analytics/urls.py
+@@ -0,0 +1,6 @@
++from django.urls import path
++from .views import reports_view
++
++urlpatterns = [
++    path('reports/', reports_view, name='reports'),
++]
+diff --git a/apps/analytics/views.py b/apps/analytics/views.py
+index 91ea44a..1be7f36 100644
+--- a/apps/analytics/views.py
++++ b/apps/analytics/views.py
+@@ -1,3 +1,69 @@
++from datetime import date, timedelta
++from django.contrib.auth.decorators import login_required
++from django.db.models import Count
++from django.db.models.functions import TruncMonth
+ from django.shortcuts import render
++from apps.accounts.models import CustomUser
++from apps.seniors.models import SeniorAssignment, SeniorCitizen, SeniorCondition
++from apps.visits.models import HealthVisit
+ 
+-# Create your views here.
++
++@login_required
++def reports_view(request):
++    """Read-only reports computed from the current ALAGA database."""
++    seniors = SeniorCitizen.objects.all()
++    visits = HealthVisit.objects.select_related('senior', 'worker')
++
++    # BHW report scope is limited to seniors currently assigned to that worker.
++    if getattr(request.user, 'role', '') == 'BHW':
++        assigned_ids = SeniorAssignment.objects.filter(
++            worker=request.user, unassigned_at__isnull=True
++        ).values_list('senior_id', flat=True)
++        seniors = seniors.filter(pk__in=assigned_ids)
++        visits = visits.filter(senior_id__in=assigned_ids)
++
++    today = date.today()
++    age_counts = {'60–69': 0, '70–79': 0, '80–89': 0, '90+': 0}
++    for birth_date in seniors.values_list('birth_date', flat=True):
++        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
++        if age >= 90:
++            age_counts['90+'] += 1
++        elif age >= 80:
++            age_counts['80–89'] += 1
++        elif age >= 70:
++            age_counts['70–79'] += 1
++        elif age >= 60:
++            age_counts['60–69'] += 1
++
++    barangay_data = list(
++        seniors.values('barangay').annotate(total=Count('id')).order_by('-total')[:8]
++    )
++    for row in barangay_data:
++        row['barangay'] = row['barangay'] or 'Not specified'
++
++    condition_data = list(
++        SeniorCondition.objects.filter(senior__in=seniors)
++        .values('condition__name').annotate(total=Count('senior_id', distinct=True))
++        .order_by('-total')[:8]
++    )
++
++    monthly_visits = list(
++        visits.filter(visited_at__date__gte=today - timedelta(days=180))
++        .annotate(month=TruncMonth('visited_at'))
++        .values('month').annotate(total=Count('id')).order_by('month')
++    )
++
++    total_seniors = seniors.count()
++    total_visits = visits.count()
++    context = {
++        'total_seniors': total_seniors,
++        'total_visits': total_visits,
++        'male_count': seniors.filter(sex='M').count(),
++        'female_count': seniors.filter(sex='F').count(),
++        'age_counts': age_counts,
++        'barangay_data': barangay_data,
++        'condition_data': condition_data,
++        'monthly_visits': monthly_visits,
++        'recent_visits': visits.order_by('-visited_at')[:10],
++    }
++    return render(request, 'analytics/reports.html', context)
+diff --git a/apps/seniors/migrations/0002_sync_date_of_death_column.py b/apps/seniors/migrations/0002_sync_date_of_death_column.py
+new file mode 100644
+index 0000000..c4ad3f1
+--- /dev/null
++++ b/apps/seniors/migrations/0002_sync_date_of_death_column.py
+@@ -0,0 +1,20 @@
++from django.db import migrations
++
++
++class Migration(migrations.Migration):
++    dependencies = [
++        ('seniors', '0001_initial'),
++    ]
++
++    operations = [
++        migrations.RunSQL(
++            sql=(
++                'ALTER TABLE seniors_seniorcitizen '
++                'ADD COLUMN IF NOT EXISTS date_of_death date NULL'
++            ),
++            reverse_sql=(
++                'ALTER TABLE seniors_seniorcitizen '
++                'DROP COLUMN IF EXISTS date_of_death'
++            ),
++        ),
++    ]
+diff --git a/apps/seniors/migrations/0003_sync_remaining_senior_columns.py b/apps/seniors/migrations/0003_sync_remaining_senior_columns.py
+new file mode 100644
+index 0000000..54f1f8b
+--- /dev/null
++++ b/apps/seniors/migrations/0003_sync_remaining_senior_columns.py
+@@ -0,0 +1,22 @@
++from django.db import migrations
++
++
++class Migration(migrations.Migration):
++    dependencies = [
++        ('seniors', '0002_sync_date_of_death_column'),
++    ]
++
++    operations = [
++        migrations.RunSQL(
++            sql=(
++                'ALTER TABLE seniors_seniorcitizen '
++                'ADD COLUMN IF NOT EXISTS transferred_to varchar(100) NULL, '
++                'ADD COLUMN IF NOT EXISTS archived_at timestamp with time zone NULL'
++            ),
++            reverse_sql=(
++                'ALTER TABLE seniors_seniorcitizen '
++                'DROP COLUMN IF EXISTS transferred_to, '
++                'DROP COLUMN IF EXISTS archived_at'
++            ),
++        ),
++    ]
+diff --git a/apps/seniors/urls (1).py b/apps/seniors/urls (1).py
+new file mode 100644
+index 0000000..5376c82
+--- /dev/null
++++ b/apps/seniors/urls (1).py	
+@@ -0,0 +1,6 @@
++from django.urls import path
++from .views import bhw_workload_view
++
++urlpatterns = [
++    path('bhw-workload/', bhw_workload_view, name='bhw_workload'),
++]
+diff --git a/apps/seniors/urls.py b/apps/seniors/urls.py
+new file mode 100644
+index 0000000..5376c82
+--- /dev/null
++++ b/apps/seniors/urls.py
+@@ -0,0 +1,6 @@
++from django.urls import path
++from .views import bhw_workload_view
++
++urlpatterns = [
++    path('bhw-workload/', bhw_workload_view, name='bhw_workload'),
++]
+diff --git a/apps/seniors/views.py b/apps/seniors/views.py
+index 91ea44a..b9954dd 100644
+--- a/apps/seniors/views.py
++++ b/apps/seniors/views.py
+@@ -1,3 +1,68 @@
+ from django.shortcuts import render
+ 
+ # Create your views here.
++from django.contrib import messages
++from django.contrib.auth import get_user_model
++from django.contrib.auth.decorators import login_required, user_passes_test
++from django.db import transaction
++from django.db.models import Count, Q
++from django.shortcuts import redirect, render
++from django.utils import timezone
++from .models import SeniorAssignment, SeniorCitizen
++
++User = get_user_model()
++
++
++def is_mho(user):
++    return user.is_authenticated and getattr(user, 'role', '') == 'MHO'
++
++
++@login_required
++@user_passes_test(is_mho)
++def bhw_workload_view(request):
++    """MHO-only workload overview and assignment form using existing tables."""
++    if request.method == 'POST':
++        senior_id = request.POST.get('senior_id')
++        worker_id = request.POST.get('worker_id')
++        try:
++            senior = SeniorCitizen.objects.get(pk=senior_id)
++            worker = User.objects.get(pk=worker_id, role='BHW', is_active=True)
++            with transaction.atomic():
++                # Close any current assignment for this senior before reassigning.
++                SeniorAssignment.objects.filter(
++                    senior=senior, unassigned_at__isnull=True
++                ).update(unassigned_at=timezone.now())
++                SeniorAssignment.objects.create(
++                    senior=senior,
++                    worker=worker,
++                    assigned_by=request.user,
++                    is_primary=True,
++                )
++            messages.success(request, f'{senior} assigned to {worker.get_full_name() or worker.username}.')
++        except (SeniorCitizen.DoesNotExist, User.DoesNotExist, ValueError, TypeError):
++            messages.error(request, 'Please select a valid senior citizen and active BHW.')
++        return redirect('bhw_workload')
++
++    active_assignments = SeniorAssignment.objects.filter(
++        unassigned_at__isnull=True
++    ).select_related('senior', 'worker', 'assigned_by').order_by('worker__last_name', 'senior__last_name')
++
++    workers = User.objects.filter(role='BHW', is_active=True).annotate(
++        active_senior_count=Count(
++            'assigned_seniors',
++            filter=Q(assigned_seniors__unassigned_at__isnull=True),
++            distinct=True,
++        )
++    ).order_by('last_name', 'first_name')
++
++    assigned_senior_ids = active_assignments.values_list('senior_id', flat=True)
++    unassigned_seniors = SeniorCitizen.objects.exclude(pk__in=assigned_senior_ids).order_by('last_name', 'first_name')
++
++    return render(request, 'seniors/bhw_workload.html', {
++        'assignments': active_assignments,
++        'workers': workers,
++        'unassigned_seniors': unassigned_seniors,
++        'total_workers': workers.count(),
++        'total_assignments': active_assignments.count(),
++        'unassigned_count': unassigned_seniors.count(),
++    })
+diff --git a/apps/visits/urls.py b/apps/visits/urls.py
+new file mode 100644
+index 0000000..1e29dbb
+--- /dev/null
++++ b/apps/visits/urls.py
+@@ -0,0 +1,6 @@
++from django.urls import path
++from .views import health_alerts_view
++
++urlpatterns = [
++    path('health-alerts/', health_alerts_view, name='health_alerts'),
++]
+diff --git a/apps/visits/views.py b/apps/visits/views.py
+index 91ea44a..4a0444c 100644
+--- a/apps/visits/views.py
++++ b/apps/visits/views.py
+@@ -1,3 +1,48 @@
++from datetime import date
++from django.contrib.auth.decorators import login_required
++from django.db.models import Q
+ from django.shortcuts import render
++from apps.seniors.models import SeniorAssignment
++from .models import HealthVisit
+ 
+-# Create your views here.
++
++@login_required
++def health_alerts_view(request):
++    """Display existing visit alerts and follow-up dates; does not create data."""
++    visits = HealthVisit.objects.select_related('senior', 'worker').filter(
++        Q(alert_level__isnull=False) & ~Q(alert_level__exact='')
++        | Q(follow_up_date__isnull=False)
++    )
++
++    # BHWs only see alerts for seniors currently assigned to them.
++    if getattr(request.user, 'role', '') == 'BHW':
++        assigned_ids = SeniorAssignment.objects.filter(
++            worker=request.user, unassigned_at__isnull=True
++        ).values_list('senior_id', flat=True)
++        visits = visits.filter(senior_id__in=assigned_ids)
++
++    level = request.GET.get('level', '').strip()
++    search = request.GET.get('q', '').strip()
++    if level:
++        visits = visits.filter(alert_level__iexact=level)
++    if search:
++        visits = visits.filter(
++            Q(senior__first_name__icontains=search)
++            | Q(senior__last_name__icontains=search)
++            | Q(alert_reasons__icontains=search)
++        )
++
++    today = date.today()
++    alerts = list(visits.order_by('-visited_at'))
++    for item in alerts:
++        item.follow_up_overdue = bool(item.follow_up_date and item.follow_up_date < today)
++
++    context = {
++        'alerts': alerts,
++        'selected_level': level,
++        'search_query': search,
++        'critical_count': visits.filter(alert_level__iexact='Critical').count(),
++        'warning_count': visits.filter(alert_level__iexact='Warning').count(),
++        'overdue_count': visits.filter(follow_up_date__lt=today).count(),
++    }
++    return render(request, 'visits/health_alerts.html', context)
+diff --git a/config/settings.py b/config/settings.py
+index c6c9fc1..160e02b 100644
+--- a/config/settings.py
++++ b/config/settings.py
+@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/6.1/topics/settings/
+ For the full list of settings and their values, see
+ https://docs.djangoproject.com/en/6.1/ref/settings/
+ """
+-
++from dotenv import load_dotenv
+ from pathlib import Path
+ import os
+ 
+@@ -87,10 +87,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
+ DATABASES = {
+     'default': {
+         'ENGINE': 'django.db.backends.postgresql',
+-        'NAME': 'postgres', # Supabase uses 'postgres' as the default DB name
++        'NAME': 'postgres',
+         'USER': 'postgres.ckurdkqndnpmmrfpfbap',
+         'PASSWORD': os.environ.get('SUPABASE_PASSWORD', 'Pacina_925!'),
+-        'HOST': 'aws-0-ap-southeast-2.pooler.supabase.com', 
++        'HOST': 'aws-0-ap-southeast-2.pooler.supabase.com',
+         'PORT': '5432',
+     }
+ }
+diff --git a/config/urls.py b/config/urls.py
+index 31037ff..7259ba8 100644
+--- a/config/urls.py
++++ b/config/urls.py
+@@ -24,4 +24,7 @@ urlpatterns = [
+     path('', include('apps.home.urls')),
+     path('', include('apps.user_profile.urls')),
+     path('', include('apps.user_settings.urls')),
++    path('', include('apps.visits.urls')),
++    path('', include('apps.seniors.urls')),
++    path('', include('apps.analytics.urls')),
+ ]
+\ No newline at end of file
+diff --git a/static/css/style.css b/static/css/style.css
+index 7616bb3..5e761d7 100644
+--- a/static/css/style.css
++++ b/static/css/style.css
+@@ -54,8 +54,10 @@ body.app-body {
+    ========================================================================== */
+ 
+ .app-navbar {
+-    background-color: #ffffff;
++    background: rgb(255 255 255 / 0.94);
+     border-bottom: 1px solid var(--slate-200);
++    box-shadow: 0 4px 18px rgb(15 23 42 / 0.04);
++    backdrop-filter: blur(14px);
+     position: sticky;
+     top: 0;
+     z-index: 50;
+@@ -64,7 +66,7 @@ body.app-body {
+ .nav-container {
+     max-width: 1200px;
+     margin: 0 auto;
+-    padding: 0.85rem 1.5rem;
++    padding: 0.7rem 1.5rem;
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+@@ -73,67 +75,226 @@ body.app-body {
+ .brand-logo {
+     display: flex;
+     align-items: center;
+-    gap: 0.5rem;
++    gap: 0.65rem;
+     text-decoration: none;
+     color: var(--slate-900);
+ }
+ 
+-.brand-icon {
+-    font-size: 1.5rem;
++.brand-copy {
++    display: flex;
++    flex-direction: column;
++    line-height: 1.05;
+ }
+ 
+ .brand-text {
+     font-weight: 700;
+-    font-size: 1.25rem;
+-    letter-spacing: -0.02em;
++    font-size: 1.05rem;
++    letter-spacing: 0.08em;
+     color: var(--primary);
+ }
+ 
+ .brand-badge {
+-    font-size: 0.7rem;
++    font-size: 0.58rem;
+     font-weight: 600;
+     text-transform: uppercase;
+-    background: var(--primary-light);
+-    color: var(--primary);
+-    padding: 0.15rem 0.5rem;
+-    border-radius: 9999px;
+-    letter-spacing: 0.05em;
+-    display: none;
++    color: var(--slate-500);
++    letter-spacing: 0.06em;
++    display: inline-block;
+ }
+ 
+-@media (min-width: 640px) {
+-    .brand-badge {
+-        display: inline-block;
+-    }
++.nav-primary,
++.nav-account {
++    display: flex;
++    align-items: center;
++    gap: 0.2rem;
++    flex-shrink: 0;
+ }
+ 
+ .nav-links {
+     display: flex;
+     align-items: center;
+-    gap: 1rem;
++    gap: 0.75rem;
++    margin-left: auto;
++    min-width: 0;
++}
++
++.nav-link {
++    display: inline-flex;
++    align-items: center;
++    min-height: 2.3rem;
++    padding: 0.35rem 0.65rem;
++    border-radius: 7px;
++    border: 1px solid var(--slate-200);
++    background: var(--slate-100);
++    color: var(--slate-700);
++    font-size: 0.8rem;
++    font-weight: 600;
++    text-decoration: none;
++    transition: var(--transition);
++}
++
++.nav-link:hover,
++.nav-link.is-active {
++    color: var(--primary);
++    border-color: var(--primary-border);
++    background: var(--primary-light);
++}
++
++.nav-link-quiet {
++    color: var(--slate-700);
++}
++
++.account-menu {
++    position: relative;
++    margin-left: 0.35rem;
++    padding-left: 0.8rem;
++    border-left: 1px solid var(--slate-200);
++}
++
++.account-trigger {
++    display: flex;
++    align-items: center;
++    gap: 0.55rem;
++    appearance: none;
++    cursor: pointer;
++    list-style: none;
++}
++
++.account-trigger::-webkit-details-marker {
++    display: none;
++}
++
++.account-menu[open] .account-trigger,
++.account-trigger:hover {
++    border-color: var(--primary-border);
++    background: var(--primary-light);
++}
++
++.account-chevron {
++    width: 0.45rem;
++    height: 0.45rem;
++    border-right: 1.5px solid var(--slate-500);
++    border-bottom: 1.5px solid var(--slate-500);
++    transform: rotate(45deg) translateY(-2px);
+ }
+ 
+-.user-pill {
++.account-dropdown {
++    position: absolute;
++    top: calc(100% + 0.55rem);
++    right: 0;
++    z-index: 60;
+     display: flex;
+     flex-direction: column;
+-    align-items: flex-end;
+-    font-size: 0.825rem;
+-    margin-right: 0.5rem;
++    align-items: stretch;
++    min-width: 10rem;
++    gap: 0.3rem;
++    padding: 0.45rem;
++    border: 1px solid var(--slate-200);
++    border-radius: var(--radius-md);
++    background: #ffffff;
++    box-shadow: var(--shadow-lg);
++}
++
++.dropdown-link {
++    display: block;
++    width: 100%;
++    padding: 0.6rem 0.7rem;
++    border: 1px solid var(--slate-200);
++    border-radius: 6px;
++    background: var(--slate-100);
++    color: var(--slate-700);
++    font: inherit;
++    font-size: 0.8rem;
++    font-weight: 600;
++    text-align: left;
++    text-decoration: none;
++    cursor: pointer;
++}
++
++.dropdown-link:hover,
++.dropdown-link.is-active {
++    background: var(--primary-light);
++    color: var(--primary);
++}
++
++.dropdown-form {
++    margin-top: 0.1rem;
++}
++
++.user-details {
++    display: flex;
++    flex-direction: column;
++    line-height: 1.15;
++    white-space: nowrap;
++    font-size: 0.7rem;
++    max-width: 7rem;
++    overflow: hidden;
+ }
+ 
+ .user-role {
+     font-weight: 700;
+-    color: var(--primary);
++    color: var(--slate-700);
++    overflow: hidden;
++    text-overflow: ellipsis;
+ }
+ 
+ .user-name {
+     color: var(--slate-500);
++    overflow: hidden;
++    text-overflow: ellipsis;
+ }
+ 
+ .inline-form {
+     display: inline;
+ }
+ 
++@media (max-width: 980px) {
++    .nav-container {
++        flex-wrap: wrap;
++    }
++
++    .nav-links {
++        width: 100%;
++        margin-left: 0;
++        padding-top: 0.35rem;
++        overflow-x: auto;
++        scrollbar-width: none;
++    }
++
++    .nav-links::-webkit-scrollbar {
++        display: none;
++    }
++
++    .nav-primary,
++    .nav-account {
++        flex-shrink: 0;
++    }
++}
++
++@media (max-width: 620px) {
++    .nav-container {
++        padding: 0.65rem 1rem;
++    }
++
++    .brand-badge,
++    .user-details {
++        display: none;
++    }
++
++    .account-menu {
++        padding-left: 0.45rem;
++    }
++
++    .nav-links {
++        gap: 0.45rem;
++        justify-content: space-between;
++    }
++
++    .nav-link {
++        font-size: 0.75rem;
++    }
++}
++
+ /* ==========================================================================
+    Buttons & Form Controls
+    ========================================================================== */
+diff --git a/templates/analytics/reports.html b/templates/analytics/reports.html
+new file mode 100644
+index 0000000..37e53bb
+--- /dev/null
++++ b/templates/analytics/reports.html
+@@ -0,0 +1,15 @@
++{% extends 'base.html' %}
++{% block title %}Reports & Analytics | ALAGA{% endblock %}
++{% block content %}
++<style>
++.page-wrap{max-width:1200px;margin:2rem auto;padding:0 1.25rem;width:100%}.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.5rem}.page-head h1{font-size:1.8rem;color:#0f172a}.muted{color:#64748b}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin:1.2rem 0}.card,.panel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:1.2rem;box-shadow:0 2px 5px #0f172a0a}.card strong{display:block;font-size:1.8rem}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0}.bar-row{display:grid;grid-template-columns:minmax(90px,1fr) 2fr 35px;align-items:center;gap:.7rem;margin:.85rem 0;font-size:.88rem}.track{height:10px;border-radius:99px;background:#f1f5f9;overflow:hidden}.fill{height:100%;background:#0f766e;border-radius:99px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.8rem;border-bottom:1px solid #e2e8f0}th{font-size:.78rem;color:#64748b;text-transform:uppercase}.empty{padding:1.5rem;text-align:center;color:#64748b}.note{font-size:.82rem;color:#64748b;margin-top:.8rem}@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}}@media(max-width:450px){.stats{grid-template-columns:1fr}.page-head{display:block}}
++</style>
++<div class="page-wrap"><div class="page-head"><div><h1>Reports & Analytics</h1><p class="muted">A read-only overview calculated from ALAGA's existing records.</p></div><a class="btn btn-secondary" href="{% url 'home' %}">Back to Dashboard</a></div>
++<div class="stats"><div class="card"><span class="muted">Senior citizens</span><strong>{{ total_seniors }}</strong></div><div class="card"><span class="muted">Recorded visits</span><strong>{{ total_visits }}</strong></div><div class="card"><span class="muted">Male</span><strong>{{ male_count }}</strong></div><div class="card"><span class="muted">Female</span><strong>{{ female_count }}</strong></div></div>
++<div class="two-col"><section class="panel"><h2>Age distribution</h2>{% for label,count in age_counts.items %}<div class="bar-row"><span>{{ label }}</span><div class="track"><div class="fill" style="width:{% if total_seniors %}{% widthratio count total_seniors 100 %}{% else %}0{% endif %}%"></div></div><strong>{{ count }}</strong></div>{% endfor %}</section>
++<section class="panel"><h2>Senior citizens by barangay</h2>{% for row in barangay_data %}<div class="bar-row"><span>{{ row.barangay }}</span><div class="track"><div class="fill" style="width:{% if total_seniors %}{% widthratio row.total total_seniors 100 %}{% else %}0{% endif %}%"></div></div><strong>{{ row.total }}</strong></div>{% empty %}<p class="empty">No barangay data available.</p>{% endfor %}</section></div>
++<div class="two-col"><section class="panel"><h2>Common recorded conditions</h2><div class="table-wrap"><table><thead><tr><th>Condition</th><th>Senior count</th></tr></thead><tbody>{% for row in condition_data %}<tr><td>{{ row.condition__name }}</td><td>{{ row.total }}</td></tr>{% empty %}<tr><td colspan="2" class="empty">No condition records available.</td></tr>{% endfor %}</tbody></table></div></section>
++<section class="panel"><h2>Monthly visits · Last 6 months</h2><div class="table-wrap"><table><thead><tr><th>Month</th><th>Visits</th></tr></thead><tbody>{% for row in monthly_visits %}<tr><td>{{ row.month|date:'F Y' }}</td><td>{{ row.total }}</td></tr>{% empty %}<tr><td colspan="2" class="empty">No visits recorded in this period.</td></tr>{% endfor %}</tbody></table></div><p class="note">Visit totals are based on the visit date recorded in the database.</p></section></div>
++<section class="panel"><h2>Recent health visits</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Senior citizen</th><th>Visit type</th><th>Health worker</th><th>Alert level</th></tr></thead><tbody>{% for visit in recent_visits %}<tr><td>{{ visit.visited_at|date:'M d, Y' }}</td><td>{{ visit.senior.last_name }}, {{ visit.senior.first_name }}</td><td>{{ visit.visit_type|default:'—' }}</td><td>{{ visit.worker.get_full_name|default:visit.worker.username|default:'—' }}</td><td>{{ visit.alert_level|default:'—' }}</td></tr>{% empty %}<tr><td colspan="5" class="empty">No health visits recorded.</td></tr>{% endfor %}</tbody></table></div></section>
++</div>
++{% endblock %}
+diff --git a/templates/base.html b/templates/base.html
+index 880151c..efc9e62 100644
+--- a/templates/base.html
++++ b/templates/base.html
+@@ -10,37 +10,37 @@
+     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+     
+-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
++    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=3">
+     {% block extra_css %}{% endblock %}
+ </head>
+ <body class="app-body">
+ 
+-    <!-- Top Navigation Bar -->
+     <header class="app-navbar">
+         <div class="nav-container">
+             <a href="{% url 'home' %}" class="brand-logo">
+-                <span class="brand-icon">🩺</span>
+-                <span class="brand-text">ALAGA</span>
+-                <span class="brand-badge">Health Intelligence</span>
++                <span class="brand-copy">
++                    <span class="brand-text">ALAGA</span>
++                    <span class="brand-badge">Community care</span>
++                </span>
+             </a>
+ 
+-            <nav class="nav-links">
++            <nav class="nav-links" aria-label="Primary navigation">
+                 {% if user.is_authenticated %}
+-                    <a href="{% url 'profile' %}" class="nav-link">Profile</a>
+-                    <a href="{% url 'settings' %}" class="nav-link">Settings</a>
+-                    
+-                    <div class="user-pill">
+-                        <span class="user-role">{{ user.get_role_display|default:"Staff" }}</span>
+-                        <span class="user-name">{{ user.username }}</span>
++                    <div class="nav-primary">
++                        <a href="{% url 'health_alerts' %}" class="btn btn-secondary btn-sm nav-link{% if request.resolver_match.url_name == 'health_alerts' %} is-active{% endif %}"{% if request.resolver_match.url_name == 'health_alerts' %} aria-current="page"{% endif %}>Health Alerts</a>
++                        <a href="{% url 'reports' %}" class="btn btn-secondary btn-sm nav-link{% if request.resolver_match.url_name == 'reports' %} is-active{% endif %}"{% if request.resolver_match.url_name == 'reports' %} aria-current="page"{% endif %}>Reports</a>
++                        {% if user.role == 'MHO' %}
++                            <a href="{% url 'bhw_workload' %}" class="btn btn-secondary btn-sm nav-link{% if request.resolver_match.url_name == 'bhw_workload' %} is-active{% endif %}"{% if request.resolver_match.url_name == 'bhw_workload' %} aria-current="page"{% endif %}>BHW Workload</a>
++                        {% endif %}
++                    </div>
++                    <div class="nav-account">
++                        {% include 'includes/account_menu.html' %}
+                     </div>
+-                    
+-                    <form method="POST" action="{% url 'logout' %}" class="inline-form">
+-                        {% csrf_token %}
+-                        <button type="submit" class="btn btn-secondary btn-sm">Sign Out</button>
+-                    </form>
+                 {% else %}
+-                    <a href="{% url 'login' %}" class="nav-link">Sign In</a>
+-                    <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Register Worker</a>
++                    <div class="nav-account">
++                        <a href="{% url 'login' %}" class="btn btn-secondary btn-sm nav-link">Sign In</a>
++                        <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Register Worker</a>
++                    </div>
+                 {% endif %}
+             </nav>
+         </div>
+diff --git a/templates/includes/account_menu.html b/templates/includes/account_menu.html
+new file mode 100644
+index 0000000..5ec57e8
+--- /dev/null
++++ b/templates/includes/account_menu.html
+@@ -0,0 +1,18 @@
++<details class="account-menu">
++    <summary class="account-trigger btn btn-secondary btn-sm">
++        <span class="user-details">
++            <span class="user-role">{{ user.role|default:"Staff" }}</span>
++            <span class="user-name">{{ user.username }}</span>
++        </span>
++        <span class="account-chevron" aria-hidden="true"></span>
++    </summary>
++    <div class="account-dropdown">
++        <a href="{% url 'home' %}" class="dropdown-link{% if request.resolver_match.url_name == 'home' %} is-active{% endif %}">Dashboard</a>
++        <a href="{% url 'profile' %}" class="dropdown-link{% if request.resolver_match.url_name == 'profile' %} is-active{% endif %}">Profile</a>
++        <a href="{% url 'settings' %}" class="dropdown-link{% if request.resolver_match.url_name == 'settings' %} is-active{% endif %}">Settings</a>
++        <form method="POST" action="{% url 'logout' %}" class="dropdown-form">
++            {% csrf_token %}
++            <button type="submit" class="dropdown-link dropdown-signout">Sign Out</button>
++        </form>
++    </div>
++</details>
+diff --git a/templates/seniors/bhw_workload.html b/templates/seniors/bhw_workload.html
+new file mode 100644
+index 0000000..63a8a38
+--- /dev/null
++++ b/templates/seniors/bhw_workload.html
+@@ -0,0 +1,11 @@
++{% extends 'base.html' %}
++{% block title %}BHW Workload | ALAGA{% endblock %}
++{% block content %}
++<style>
++.page-wrap{max-width:1200px;margin:2rem auto;padding:0 1.25rem;width:100%}.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.5rem}.page-head h1{font-size:1.8rem;color:#0f172a}.muted{color:#64748b}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin:1.2rem 0}.card,.panel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:1.2rem;box-shadow:0 2px 5px #0f172a0a}.card strong{display:block;font-size:1.8rem}.layout{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.5fr);gap:1rem}.field{display:flex;flex-direction:column;gap:.4rem;margin:1rem 0}.field select{padding:.7rem;border:1px solid #cbd5e1;border-radius:8px;background:white}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.8rem;border-bottom:1px solid #e2e8f0}th{font-size:.78rem;color:#64748b;text-transform:uppercase}.empty{text-align:center;padding:1.5rem;color:#64748b}@media(max-width:760px){.grid,.layout{grid-template-columns:1fr}.page-head{display:block}}
++</style>
++<div class="page-wrap"><div class="page-head"><div><h1>BHW Workload & Assignment</h1><p class="muted">Manage active senior citizen assignments across health workers.</p></div><a class="btn btn-secondary" href="{% url 'home' %}">Back to Dashboard</a></div>
++<div class="grid"><div class="card"><span class="muted">Active BHWs</span><strong>{{ total_workers }}</strong></div><div class="card"><span class="muted">Active assignments</span><strong>{{ total_assignments }}</strong></div><div class="card"><span class="muted">Unassigned seniors</span><strong>{{ unassigned_count }}</strong></div></div>
++<div class="layout"><section class="panel"><h2>Assign a senior citizen</h2><p class="muted">Reassigning a senior automatically closes their previous active assignment.</p><form method="post">{% csrf_token %}<div class="field"><label for="senior_id">Senior citizen</label><select id="senior_id" name="senior_id" required><option value="">Choose senior citizen</option>{% for senior in unassigned_seniors %}<option value="{{ senior.pk }}">{{ senior.last_name }}, {{ senior.first_name }}</option>{% endfor %}{% for assignment in assignments %}<option value="{{ assignment.senior_id }}">{{ assignment.senior.last_name }}, {{ assignment.senior.first_name }} (reassign)</option>{% endfor %}</select></div><div class="field"><label for="worker_id">Assign to BHW</label><select id="worker_id" name="worker_id" required><option value="">Choose BHW</option>{% for worker in workers %}<option value="{{ worker.pk }}">{{ worker.get_full_name|default:worker.username }} · {{ worker.active_senior_count }} assigned</option>{% endfor %}</select></div><button class="btn btn-primary" type="submit">Save assignment</button></form></section>
++<section class="panel"><h2>Current assignments</h2><div class="table-wrap"><table><thead><tr><th>Senior citizen</th><th>Barangay</th><th>Assigned BHW</th><th>Assigned date</th></tr></thead><tbody>{% for assignment in assignments %}<tr><td>{{ assignment.senior.last_name }}, {{ assignment.senior.first_name }}</td><td>{{ assignment.senior.barangay|default:'—' }}</td><td>{{ assignment.worker.get_full_name|default:assignment.worker.username }}</td><td>{{ assignment.assigned_at|date:'M d, Y' }}</td></tr>{% empty %}<tr><td colspan="4" class="empty">No active assignments found.</td></tr>{% endfor %}</tbody></table></div></section></div></div>
++{% endblock %}
+diff --git a/templates/visits/health_alerts.html b/templates/visits/health_alerts.html
+new file mode 100644
+index 0000000..7827348
+--- /dev/null
++++ b/templates/visits/health_alerts.html
+@@ -0,0 +1,16 @@
++{% extends 'base.html' %}
++{% block title %}Health Alerts & Follow-ups | ALAGA{% endblock %}
++{% block content %}
++<style>
++.page-wrap{max-width:1200px;margin:2rem auto;padding:0 1.25rem;width:100%}.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.5rem}.page-head h1{font-size:1.8rem;color:#0f172a}.muted{color:#64748b}.stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin:1.25rem 0}.stat-card,.panel{background:white;border:1px solid #e2e8f0;border-radius:14px;padding:1.15rem;box-shadow:0 2px 5px #0f172a0a}.stat-card strong{display:block;font-size:1.8rem}.filter-bar{display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:1rem}.filter-bar input,.filter-bar select{padding:.65rem;border:1px solid #cbd5e1;border-radius:8px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.85rem;border-bottom:1px solid #e2e8f0;vertical-align:top}th{color:#64748b;font-size:.78rem;text-transform:uppercase}.pill{display:inline-block;border-radius:999px;padding:.2rem .65rem;font-size:.78rem;font-weight:700;background:#f1f5f9}.critical{background:#ffe4e6;color:#be123c}.warning{background:#fef3c7;color:#92400e}.overdue{color:#be123c;font-weight:700}.empty{padding:2rem;text-align:center;color:#64748b}@media(max-width:700px){.stat-grid{grid-template-columns:1fr}.page-head{display:block}}
++</style>
++<div class="page-wrap">
++ <div class="page-head"><div><h1>Health Alerts & Follow-ups</h1><p class="muted">Review health observations and upcoming or overdue follow-ups.</p></div><a class="btn btn-secondary" href="{% url 'home' %}">Back to Dashboard</a></div>
++ <div class="stat-grid"><div class="stat-card"><span class="muted">Critical alerts</span><strong>{{ critical_count }}</strong></div><div class="stat-card"><span class="muted">Warning alerts</span><strong>{{ warning_count }}</strong></div><div class="stat-card"><span class="muted">Overdue follow-ups</span><strong>{{ overdue_count }}</strong></div></div>
++ <section class="panel"><form method="get" class="filter-bar"><input type="search" name="q" value="{{ search_query }}" placeholder="Search senior or alert reason"><select name="level"><option value="">All alert levels</option><option value="Critical" {% if selected_level == 'Critical' %}selected{% endif %}>Critical</option><option value="Warning" {% if selected_level == 'Warning' %}selected{% endif %}>Warning</option><option value="Normal" {% if selected_level == 'Normal' %}selected{% endif %}>Normal</option></select><button class="btn btn-primary" type="submit">Apply filters</button><a class="btn btn-outline" href="{% url 'health_alerts' %}">Clear</a></form>
++ <div class="table-wrap"><table><thead><tr><th>Senior citizen</th><th>Alert</th><th>Reason / observation</th><th>Visit date</th><th>Follow-up</th><th>Recorded by</th></tr></thead><tbody>
++ {% for item in alerts %}<tr><td><strong>{{ item.senior.last_name }}, {{ item.senior.first_name }}</strong><br><span class="muted">{{ item.senior.barangay|default:'Barangay not specified' }}</span></td><td><span class="pill {% if item.alert_level|lower == 'critical' %}critical{% elif item.alert_level|lower == 'warning' %}warning{% endif %}">{{ item.alert_level }}</span></td><td>{{ item.alert_reasons|default:item.symptoms|default:item.notes|default:'No reason recorded'|truncatechars:120 }}</td><td>{{ item.visited_at|date:'M d, Y' }}</td><td>{% if item.follow_up_date %}<span class="{% if item.follow_up_overdue %}overdue{% endif %}">{{ item.follow_up_date|date:'M d, Y' }}{% if item.follow_up_overdue %} · Overdue{% endif %}</span>{% else %}<span class="muted">Not set</span>{% endif %}</td><td>{{ item.worker.get_full_name|default:item.worker.username|default:'—' }}</td></tr>
++ {% empty %}<tr><td colspan="6" class="empty">No health alerts match your filters.</td></tr>{% endfor %}
++ </tbody></table></div></section>
++</div>
++{% endblock %}
