@@ -54,8 +54,10 @@ body.app-body {
    ========================================================================== */
 
 .app-navbar {
-    background-color: #ffffff;
+    background: rgb(255 255 255 / 0.94);
     border-bottom: 1px solid var(--slate-200);
+    box-shadow: 0 4px 18px rgb(15 23 42 / 0.04);
+    backdrop-filter: blur(14px);
     position: sticky;
     top: 0;
     z-index: 50;
@@ -64,7 +66,7 @@ body.app-body {
 .nav-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0.85rem 1.5rem;
+    padding: 0.7rem 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -73,65 +75,224 @@ body.app-body {
 .brand-logo {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.65rem;
     text-decoration: none;
     color: var(--slate-900);
 }
 
-.brand-icon {
-    font-size: 1.5rem;
+.brand-copy {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
 }
 
 .brand-text {
     font-weight: 700;
-    font-size: 1.25rem;
-    letter-spacing: -0.02em;
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
     color: var(--primary);
 }
 
 .brand-badge {
-    font-size: 0.7rem;
+    font-size: 0.58rem;
     font-weight: 600;
     text-transform: uppercase;
-    background: var(--primary-light);
-    color: var(--primary);
-    padding: 0.15rem 0.5rem;
-    border-radius: 9999px;
-    letter-spacing: 0.05em;
-    display: none;
+    color: var(--slate-500);
+    letter-spacing: 0.06em;
+    display: inline-block;
 }
 
-@media (min-width: 640px) {
-    .brand-badge {
-        display: inline-block;
-    }
+.nav-primary,
+.nav-account {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
 }
 
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+    margin-left: auto;
+    min-width: 0;
 }
 
-.user-pill {
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.3rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 7px;
+    border: 1px solid var(--slate-200);
+    background: var(--slate-100);
+    color: var(--slate-700);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.nav-link:hover,
+.nav-link.is-active {
+    color: var(--primary);
+    border-color: var(--primary-border);
+    background: var(--primary-light);
+}
+
+.nav-link-quiet {
+    color: var(--slate-700);
+}
+
+.account-menu {
+    position: relative;
+    margin-left: 0.35rem;
+    padding-left: 0.8rem;
+    border-left: 1px solid var(--slate-200);
+}
+
+.account-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    appearance: none;
+    cursor: pointer;
+    list-style: none;
+}
+
+.account-trigger::-webkit-details-marker {
+    display: none;
+}
+
+.account-menu[open] .account-trigger,
+.account-trigger:hover {
+    border-color: var(--primary-border);
+    background: var(--primary-light);
+}
+
+.account-chevron {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-right: 1.5px solid var(--slate-500);
+    border-bottom: 1.5px solid var(--slate-500);
+    transform: rotate(45deg) translateY(-2px);
+}
+
+.account-dropdown {
+    position: absolute;
+    top: calc(100% + 0.55rem);
+    right: 0;
+    z-index: 60;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    font-size: 0.825rem;
-    margin-right: 0.5rem;
+    align-items: stretch;
+    min-width: 10rem;
+    gap: 0.3rem;
+    padding: 0.45rem;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    box-shadow: var(--shadow-lg);
+}
+
+.dropdown-link {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--slate-200);
+    border-radius: 6px;
+    background: var(--slate-100);
+    color: var(--slate-700);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dropdown-link:hover,
+.dropdown-link.is-active {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.dropdown-form {
+    margin-top: 0.1rem;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    white-space: nowrap;
+    font-size: 0.7rem;
+    max-width: 7rem;
+    overflow: hidden;
 }
 
 .user-role {
     font-weight: 700;
-    color: var(--primary);
+    color: var(--slate-700);
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .user-name {
     color: var(--slate-500);
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .inline-form {
     display: inline;
+}
+
+@media (max-width: 980px) {
+    .nav-container {
+        flex-wrap: wrap;
+    }
+
+    .nav-links {
+        width: 100%;
+        margin-left: 0;
+        padding-top: 0.35rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .nav-links::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-primary,
+    .nav-account {
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 620px) {
+    .nav-container {
+        padding: 0.65rem 1rem;
+    }
+
+    .brand-badge,
+    .user-details {
+        display: none;
+    }
+
+    .account-menu {
+        padding-left: 0.45rem;
+    }
+
+    .nav-links {
+        gap: 0.45rem;
+        justify-content: space-between;
+    }
+
+    .nav-link {
+        font-size: 0.75rem;
+    }
 }
 
 /* ==========================================================================
