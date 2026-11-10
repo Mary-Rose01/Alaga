@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/6.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
-
+from dotenv import load_dotenv
 from pathlib import Path
 import os
 
@@ -87,10 +87,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres', # Supabase uses 'postgres' as the default DB name
+        'NAME': 'postgres',
         'USER': 'postgres.ckurdkqndnpmmrfpfbap',
         'PASSWORD': os.environ.get('SUPABASE_PASSWORD', 'Pacina_925!'),
-        'HOST': 'aws-0-ap-southeast-2.pooler.supabase.com', 
+        'HOST': 'aws-0-ap-southeast-2.pooler.supabase.com',
         'PORT': '5432',
     }
 }
