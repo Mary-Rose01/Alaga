@@ -2,137 +2,181 @@
 {% load static %}
 
 {% block title %}Register Worker | ALAGA{% endblock %}
+{% block page_title %}Register{% endblock %}
 
 {% block content %}
-<div class="auth-wrapper">
-    <div class="auth-card register-card">
-        <div class="auth-header">
-            <h2>Join ALAGA</h2>
-            <p>Register as a Barangay Health Worker (BHW) or Municipal Health Officer (MHO)</p>
-        </div>
+<div class="login-screen">
 
-        {% if form.non_field_errors %}
-            <div class="alert alert-error">
-                {% for error in form.non_field_errors %}
-                    <p>{{ error }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        <form method="POST" action="{% url 'register' %}" class="auth-form" id="registerForm" novalidate>
-            {% csrf_token %}
-
-            <div class="form-grid">
-                <!-- Username -->
-                <div class="form-group">
-                    <label for="id_username">Username <span class="required">*</span></label>
-                    <input 
-                        type="text" 
-                        name="username" 
-                        id="id_username" 
-                        class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
-                        value="{{ form.username.value|default:'' }}" 
-                        placeholder="e.g., maria_santos" 
-                        required
-                    >
-                    {% if form.username.errors %}
-                        <span class="field-error">{{ form.username.errors.0 }}</span>
-                    {% endif %}
-                </div>
-
-                <!-- Email -->
-                <div class="form-group">
-                    <label for="id_email">Email Address</label>
-                    <input 
-                        type="email" 
-                        name="email" 
-                        id="id_email" 
-                        class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
-                        value="{{ form.email.value|default:'' }}" 
-                        placeholder="worker@barangay.gov.ph"
-                    >
-                    {% if form.email.errors %}
-                        <span class="field-error">{{ form.email.errors.0 }}</span>
-                    {% endif %}
-                </div>
-
-                <!-- Role Selection -->
-                <div class="form-group">
-                    <label for="id_role">Assigned Role <span class="required">*</span></label>
-                    <select name="role" id="id_role" class="form-control select-control {% if form.role.errors %}is-invalid{% endif %}" required>
-                        <option value="BHW" {% if form.role.value == 'BHW' %}selected{% endif %}>Barangay Health Worker (BHW)</option>
-                        <option value="MHO" {% if form.role.value == 'MHO' %}selected{% endif %}>Municipal Health Officer (MHO)</option>
-                    </select>
-                    {% if form.role.errors %}
-                        <span class="field-error">{{ form.role.errors.0 }}</span>
-                    {% endif %}
-                </div>
-
-                <!-- Contact Number -->
-                <div class="form-group">
-                    <label for="id_contact_number">Mobile Contact</label>
-                    <input 
-                        type="tel" 
-                        name="contact_number" 
-                        id="id_contact_number" 
-                        class="form-control {% if form.contact_number.errors %}is-invalid{% endif %}" 
-                        value="{{ form.contact_number.value|default:'' }}" 
-                        placeholder="0917-000-0000"
-                    >
-                    {% if form.contact_number.errors %}
-                        <span class="field-error">{{ form.contact_number.errors.0 }}</span>
-                    {% endif %}
-                </div>
-
-                <!-- Password -->
-                <div class="form-group">
-                    <label for="id_password">Password <span class="required">*</span></label>
-                    <div class="input-wrapper password-field">
-                        <input 
-                            type="password" 
-                            name="password" 
-                            id="id_password" 
-                            class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
-                            placeholder="At least 8 characters" 
-                            required
-                        >
-                        <button type="button" class="password-toggle" data-target="id_password" aria-label="Toggle password visibility">👁</button>
-                    </div>
-                    {% if form.password.errors %}
-                        <span class="field-error">{{ form.password.errors.0 }}</span>
-                    {% endif %}
-                </div>
-
-                <!-- Confirm Password -->
-                <div class="form-group">
-                    <label for="id_confirm_password">Confirm Password <span class="required">*</span></label>
-                    <div class="input-wrapper password-field">
-                        <input 
-                            type="password" 
-                            name="confirm_password" 
-                            id="id_confirm_password" 
-                            class="form-control {% if form.confirm_password.errors %}is-invalid{% endif %}" 
-                            placeholder="Re-enter password" 
-                            required
-                        >
-                        <button type="button" class="password-toggle" data-target="id_confirm_password" aria-label="Toggle password visibility">👁</button>
-                    </div>
-                    <span class="validation-hint" id="passwordMatchHint"></span>
-                    {% if form.confirm_password.errors %}
-                        <span class="field-error">{{ form.confirm_password.errors.0 }}</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block submit-btn mt-4">
-                <span class="btn-text">Complete Registration</span>
-                <span class="btn-spinner hide" aria-hidden="true"></span>
-            </button>
-        </form>
-
-        <div class="auth-footer">
-            <p>Already have an account? <a href="{% url 'login' %}">Sign in here</a></p>
-        </div>
+  <!-- Left Branding Panel -->
+  <div class="login-left">
+    <div class="login-brand">
+      <span class="brand-mark">A</span>
+      <span>ALAGA</span>
     </div>
-</div>
+    <div class="login-copy">
+      <h2>Join ALAGA</h2>
+      <p>Register as a healthcare worker to coordinate senior citizen care in your community.</p>
+    </div>
+    <div class="login-illustration" aria-hidden="true">
+      <div class="illustration-circle"></div>
+      <div class="float-card">
+        <div class="float-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.44 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        </div>
+        <span>Community care starts here</span>
+      </div>
+    </div>
+    <div class="login-foot">
+      <p class="privacy-note">Your data is protected and used only for health coordination purposes.</p>
+    </div>
+  </div>
+
+  <!-- Right Form Panel -->
+  <div class="login-right">
+    <div class="login-form-wrap">
+
+      <div class="mobile-login-brand">
+        <span class="brand-mark">A</span>
+        <span>ALAGA</span>
+      </div>
+
+      <h1>Create your account</h1>
+      <p class="login-sub">Fill in your details to register as a BHW or MHO.</p>
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-error">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+          <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+        </div>
+      {% endif %}
+
+      <form method="POST" action="{% url 'register' %}" class="auth-form" id="registerForm" novalidate>
+        {% csrf_token %}
+
+        <div class="form-grid">
+
+          <!-- Username -->
+          <div class="field">
+            <label for="id_username">Username <span class="required">*</span></label>
+            <input
+              type="text"
+              name="username"
+              id="id_username"
+              class="{% if form.username.errors %}is-invalid{% endif %}"
+              value="{{ form.username.value|default:'' }}"
+              placeholder="e.g., maria_santos"
+              required
+              autocomplete="username"
+            >
+            {% if form.username.errors %}
+              <span class="field-hint" style="color: var(--danger, #dc2626);">{{ form.username.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Email -->
+          <div class="field">
+            <label for="id_email">Email Address</label>
+            <input
+              type="email"
+              name="email"
+              id="id_email"
+              class="{% if form.email.errors %}is-invalid{% endif %}"
+              value="{{ form.email.value|default:'' }}"
+              placeholder="worker@barangay.gov.ph"
+              autocomplete="email"
+            >
+            {% if form.email.errors %}
+              <span class="field-hint" style="color: var(--danger, #dc2626);">{{ form.email.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Role -->
+          <div class="field">
+            <label for="id_role">Assigned Role <span class="required">*</span></label>
+            <select name="role" id="id_role" class="{% if form.role.errors %}is-invalid{% endif %}" required>
+              <option value="" disabled {% if not form.role.value %}selected{% endif %}>Select your role</option>
+              <option value="BHW" {% if form.role.value == 'BHW' %}selected{% endif %}>Barangay Health Worker (BHW)</option>
+              <option value="MHO" {% if form.role.value == 'MHO' %}selected{% endif %}>Municipal Health Officer (MHO)</option>
+            </select>
+            {% if form.role.errors %}
+              <span class="field-hint" style="color: var(--danger, #dc2626);">{{ form.role.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Contact Number -->
+          <div class="field">
+            <label for="id_contact_number">Mobile Contact</label>
+            <input
+              type="tel"
+              name="contact_number"
+              id="id_contact_number"
+              class="{% if form.contact_number.errors %}is-invalid{% endif %}"
+              value="{{ form.contact_number.value|default:'' }}"
+              placeholder="0917-000-0000"
+            >
+            {% if form.contact_number.errors %}
+              <span class="field-hint" style="color: var(--danger, #dc2626);">{{ form.contact_number.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Password -->
+          <div class="field">
+            <label for="id_password">Password <span class="required">*</span></label>
+            <div class="password-wrap">
+              <input
+                type="password"
+                name="password"
+                id="id_password"
+                class="{% if form.password.errors %}is-invalid{% endif %}"
+                placeholder="At least 8 characters"
+                required
+                autocomplete="new-password"
+              >
+              <button type="button" class="password-toggle" data-target="id_password" aria-label="Toggle password visibility">👁</button>
+            </div>
+            {% if form.password.errors %}
+              <span class="field-hint" style="color: var(--danger, #dc2626);">{{ form.password.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="field">
+            <label for="id_confirm_password">Confirm Password <span class="required">*</span></label>
+            <div class="password-wrap">
+              <input
+                type="password"
+                name="confirm_password"
+                id="id_confirm_password"
+                class="{% if form.confirm_password.errors %}is-invalid{% endif %}"
+                placeholder="Re-enter password"
+                required
+                autocomplete="new-password"
+              >
+              <button type="button" class="password-toggle" data-target="id_confirm_password" aria-label="Toggle password visibility">👁</button>
+            </div>
+            <span class="validation-hint" id="passwordMatchHint"></span>
+            {% if form.confirm_password.errors %}
+              <span class="field-hint" style="color: var(--danger, #dc2626);">{{ form.confirm_password.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+        </div><!-- .form-grid -->
+
+        <button type="submit" class="btn primary btn-block login-submit submit-btn">
+          <span class="btn-text">Complete Registration</span>
+          <span class="btn-spinner" aria-hidden="true" style="display:none;"></span>
+        </button>
+
+      </form>
+
+      <div class="login-options" style="text-align: center; margin-top: 1rem;">
+        <p>Already have an account? <a href="{% url 'login' %}">Sign in here</a></p>
+      </div>
+
+    </div><!-- .login-form-wrap -->
+  </div><!-- .login-right -->
+
+</div><!-- .login-screen -->
 {% endblock %}

@@ -4,75 +4,118 @@
 {% block title %}Sign In | ALAGA{% endblock %}
 
 {% block content %}
-<div class="auth-wrapper">
-    <div class="auth-card">
-        <div class="auth-header">
-            <h2>Welcome Back</h2>
-            <p>Access your health records and patient updates</p>
-        </div>
+<div class="login-screen">
 
-        {% if form.non_field_errors %}
-            <div class="alert alert-error">
-                {% for error in form.non_field_errors %}
-                    <p>{{ error }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        <form method="POST" action="{% url 'login' %}" class="auth-form" id="loginForm" novalidate>
-            {% csrf_token %}
-
-            <div class="form-group">
-                <label for="id_username">Username</label>
-                <div class="input-wrapper">
-                    <input 
-                        type="text" 
-                        name="username" 
-                        id="id_username" 
-                        class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
-                        placeholder="Enter your assigned username" 
-                        required 
-                        autocomplete="username"
-                        value="{{ form.username.value|default:'' }}"
-                    >
-                </div>
-                {% if form.username.errors %}
-                    <span class="field-error">{{ form.username.errors.0 }}</span>
-                {% endif %}
-            </div>
-
-            <div class="form-group">
-                <div class="label-row">
-                    <label for="id_password">Password</label>
-                </div>
-                <div class="input-wrapper password-field">
-                    <input 
-                        type="password" 
-                        name="password" 
-                        id="id_password" 
-                        class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
-                        placeholder="••••••••" 
-                        required 
-                        autocomplete="current-password"
-                    >
-                    <button type="button" class="password-toggle" data-target="id_password" aria-label="Toggle password visibility">
-                        👁
-                    </button>
-                </div>
-                {% if form.password.errors %}
-                    <span class="field-error">{{ form.password.errors.0 }}</span>
-                {% endif %}
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block submit-btn">
-                <span class="btn-text">Log In</span>
-                <span class="btn-spinner hide" aria-hidden="true"></span>
-            </button>
-        </form>
-
-        <div class="auth-footer">
-            <p>Need a worker account? <a href="{% url 'register' %}">Register here</a></p>
-        </div>
+  <!-- LEFT PANEL -->
+  <div class="login-left">
+    <div class="login-brand">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.44 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5 9.04 7.96a2.17 2.17 0 0 0 0 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 0 1 3.79 0l2.96 2.66"/><path d="m18 15-2-2"/><path d="m15 18-2-2"/></svg>
+      <b>ALAGA</b>
     </div>
+
+    <div class="login-copy">
+      <span class="eyebrow light">COMMUNITY-BASED SENIOR CARE</span>
+      <h1>Better care starts<br>with <em>connection.</em></h1>
+      <p>A shared space for local healthcare teams to coordinate, monitor, and improve the well-being of every senior in the community.</p>
+
+      <div class="login-illustration">
+        <div class="illustration-circle">
+          <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.44 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5 9.04 7.96a2.17 2.17 0 0 0 0 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 0 1 3.79 0l2.96 2.66"/><path d="m18 15-2-2"/><path d="m15 18-2-2"/></svg>
+        </div>
+        <div class="float-card one">
+          <span class="float-icon">✓</span>
+          <span><b>Care coordinated</b><small>Every visit matters</small></span>
+        </div>
+        <div class="float-card two">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+          <span><b>Follow-ups on track</b><small>Connected communities</small></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="login-foot">ALAGA · Community care, connected.</div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="login-right">
+    <div class="login-form-wrap">
+
+      <div class="mobile-login-brand">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.44 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5 9.04 7.96a2.17 2.17 0 0 0 0 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 0 1 3.79 0l2.96 2.66"/><path d="m18 15-2-2"/><path d="m15 18-2-2"/></svg>
+        <b>ALAGA</b>
+      </div>
+
+      <span class="eyebrow">WELCOME BACK</span>
+      <h2>Sign in to ALAGA</h2>
+      <p class="login-sub">Enter your account details to continue.</p>
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-error">
+        {% for error in form.non_field_errors %}
+        <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="POST" action="{% url 'login' %}" class="login-form" id="loginForm" novalidate>
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="id_username">Username</label>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              name="username"
+              id="id_username"
+              class="form-control{% if form.username.errors %} is-invalid{% endif %}"
+              placeholder="Enter your assigned username"
+              required
+              autocomplete="username"
+              value="{{ form.username.value|default:'' }}"
+            >
+          </div>
+          {% if form.username.errors %}
+          <span class="field-error">{{ form.username.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="id_password">Password</label>
+          <div class="input-wrapper password-field">
+            <input
+              type="password"
+              name="password"
+              id="id_password"
+              class="form-control{% if form.password.errors %} is-invalid{% endif %}"
+              placeholder="••••••••"
+              required
+              autocomplete="current-password"
+            >
+            <button type="button" class="password-toggle" data-target="id_password" aria-label="Toggle password visibility">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          {% if form.password.errors %}
+          <span class="field-error">{{ form.password.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div class="login-options">
+          <label><input type="checkbox" name="remember_me"> Remember me</label>
+        </div>
+
+        <button class="btn primary login-submit" type="submit">Sign in &rarr;</button>
+      </form>
+
+      <div class="privacy-note">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+        Demo environment
+      </div>
+
+      <p style="text-align:center;margin-top:1rem;font-size:11px">Need an account? <a href="{% url 'register' %}">Register here</a></p>
+
+    </div>
+  </div>
+
 </div>
 {% endblock %}
