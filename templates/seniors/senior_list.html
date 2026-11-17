@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Senior Citizens | ALAGA{% endblock %}
+{% block page_title %}Senior Citizens{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Registry</div>
+    <h1>Senior Citizens</h1>
+    <p>Manage and monitor registered senior citizens within your authorized coverage.</p>
+  </div>
+  <a href="{% url 'senior_register' %}" class="btn primary">+ Register Senior</a>
+</div>
+
+<section class="panel registry-panel">
+  <form method="get" class="filterbar">
+    <div class="searchbox">
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="search" name="q" value="{{ search_query }}" placeholder="Search name or OSCA ID...">
+    </div>
+    <select name="barangay">
+      <option value="">All barangays</option>
+      {% for b in barangays %}<option value="{{ b }}" {% if b == selected_barangay %}selected{% endif %}>{{ b }}</option>{% endfor %}
+    </select>
+    <button class="btn secondary" type="submit">Apply</button>
+    <a class="filter-button" href="{% url 'senior_list' %}">Clear</a>
+  </form>
+  <div class="table-meta"><span>{{ seniors|length }} record{{ seniors|length|pluralize }} found</span></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Senior citizen</th><th>OSCA ID</th><th>Birth date</th><th>Barangay</th><th>Contact</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for s in seniors %}
+        <tr>
+          <td><div class="person-cell"><div class="avatar pale">{{ s.first_name|first|upper }}{{ s.last_name|first|upper }}</div><div><b>{{ s.last_name }}, {{ s.first_name }}</b><small>{{ s.street_address|default:"Address not specified" }}</small></div></div></td>
+          <td>{{ s.osca_id|default:"—" }}</td>
+          <td>{{ s.birth_date|date:"M d, Y" }}</td>
+          <td>{{ s.barangay|default:"—" }}</td>
+          <td>{{ s.contact_number|default:"—" }}</td>
+          <td><span class="badge active">{{ s.status|default:"Active" }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty-state"><b>No senior citizens found.</b></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
