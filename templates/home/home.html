@@ -2,22 +2,223 @@
 {% load static %}
 
 {% block title %}Dashboard | ALAGA{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
-    <!-- Welcome Banner -->
-    <section class="hero-banner">
-        <div class="hero-content">
-            <h1>Welcome, {{ user.first_name|default:user.username }}!</h1>
-            <p class="hero-subtitle">Senior Citizen Health Intelligence & Monitoring Console</p>
-            <div class="hero-meta">
-                <span class="meta-tag">Role: {{ user.get_role_display }}</span>
-                {% if user.contact_number %}
-                    <span class="meta-tag">Contact: {{ user.contact_number }}</span>
-                {% endif %}
+<div class="page-wrap">
+
+  <!-- Welcome Row -->
+  <div class="welcome-row">
+    <div>
+      <div class="eyebrow">{{ now_date|default:"Today's Overview" }}</div>
+      <h1>Good day, {{ user.first_name|default:user.username }} <span class="wave">✦</span></h1>
+      <p>Here's an overview of senior citizen care activities {% if user.role == 'MHO' %}across your LGU{% else %}in your assigned community{% endif %}.</p>
+    </div>
+    <div class="welcome-actions">
+      <a href="{% url 'senior_register' %}" class="btn secondary">+ Register Senior</a>
+      {% if user.role == 'MHO' %}
+        <a href="{% url 'bhw_workload' %}" class="btn primary">Manage Assignments</a>
+      {% else %}
+        <a href="{% url 'health_alerts' %}" class="btn primary">Record Visit</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="stat-label">Total Senior Citizens</div>
+      <div class="stat-value">{{ total_seniors|default:"—" }}</div>
+      <div class="stat-sub">Registered in the system</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon sage">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.44 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5 9.04 7.96a2.17 2.17 0 0 0 0 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 0 1 3.79 0l2.96 2.66"/><path d="m18 15-2-2"/><path d="m15 18-2-2"/></svg>
+      </div>
+      <div class="stat-label">Active BHWs</div>
+      <div class="stat-value">{{ active_bhws|default:"—" }}</div>
+      <div class="stat-sub">Currently assigned workers</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon blue">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
+      </div>
+      <div class="stat-label">Visits This Month</div>
+      <div class="stat-value">{{ visits_this_month|default:"—" }}</div>
+      <div class="stat-sub">Health visits recorded</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon amber">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+      </div>
+      <div class="stat-label">Overdue Follow-ups</div>
+      <div class="stat-value">{{ overdue_followups|default:"—" }}</div>
+      <div class="stat-sub">Require immediate action</div>
+    </div>
+
+  </div>
+
+  <!-- Dashboard Grid — Charts + Attention -->
+  <div class="dashboard-grid">
+
+    <!-- Visit Activity Chart Panel -->
+    <div class="panel chart-panel">
+      <div class="section-head">
+        <span>Visit activity</span>
+        <select class="small-select" aria-label="Period">
+          <option>Last 7 days</option>
+          <option>Last 30 days</option>
+          <option>This month</option>
+        </select>
+      </div>
+      <div class="chart-wrap">
+        <p style="color: var(--muted); font-size: 0.85rem; text-align: center; padding: 2rem 0;">Visit activity chart coming soon</p>
+      </div>
+      <div class="chart-foot">
+        <span class="legend-dot"></span> Health visits &nbsp;
+        <span class="legend-dot" style="background: var(--amber, #d97706);"></span> Follow-ups
+      </div>
+    </div>
+
+    <!-- Needs Attention Panel -->
+    <div class="panel attention-panel">
+      <div class="section-head">
+        <span>Needs attention</span>
+        <a href="{% url 'health_alerts' %}" class="text-btn">
+          View all
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="attention-list">
+        {% for senior in attention_seniors %}
+          <div class="attention-item">
+            <div class="avatar pale">{{ senior.first_name|first|upper }}{{ senior.last_name|first|upper }}</div>
+            <div class="attention-info">
+              <span class="attention-name">{{ senior.last_name }}, {{ senior.first_name }}</span>
+              <span class="attention-meta">{{ senior.barangay }}</span>
             </div>
+            <span class="badge {% if senior.alert_level == 'critical' %}critical{% else %}warning{% endif %}">
+              {{ senior.alert_level|capfirst }}
+            </span>
+          </div>
+        {% empty %}
+          <div class="empty-state">No seniors currently need attention.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Lower Dashboard Grid — Recent Visits + Follow-up Overview -->
+  <div class="dashboard-grid lower-grid">
+
+    <!-- Recent Health Visits Table -->
+    <div class="panel">
+      <div class="section-head">
+        <span>Recent health visits</span>
+        <a href="{% url 'health_alerts' %}" class="text-btn">
+          View all
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Senior Citizen</th>
+              <th>Visit Date</th>
+              <th>BHW</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for visit in recent_visits %}
+              <tr class="click-row">
+                <td>
+                  <div class="person-cell">
+                    <div class="avatar pale">{{ visit.senior.last_name|first|upper }}</div>
+                    <span>{{ visit.senior.last_name }}</span>
+                  </div>
+                </td>
+                <td>{{ visit.visited_at|date:"M d, Y" }}</td>
+                <td>{{ visit.worker.username }}</td>
+                <td>
+                  <span class="badge {% if visit.alert_level == 'critical' %}critical{% elif visit.alert_level == 'warning' %}warning{% else %}normal{% endif %}">
+                    {{ visit.alert_level|capfirst|default:"Normal" }}
+                  </span>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="empty-state">No recent visits recorded.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Follow-up Overview -->
+    <div class="panel">
+      <div class="section-head">
+        <span>Follow-up overview</span>
+        <a href="{% url 'health_alerts' %}" class="text-btn">
+          View all
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="follow-mini">
+        {% for followup in upcoming_followups %}
+          <div class="follow-row">
+            <div class="follow-date {% if followup.status == 'overdue' %}late{% endif %}">
+              {{ followup.follow_up_date|date:"M d" }}
+            </div>
+            <div class="follow-info">
+              <span class="follow-name">{{ followup.senior.last_name }}</span>
+              <span class="follow-reason">{{ followup.reason }}</span>
+            </div>
+            <span class="badge {{ followup.status|lower|slugify }}">{{ followup.status|capfirst }}</span>
+          </div>
+        {% empty %}
+          <div class="empty-state">No upcoming follow-ups.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MHO Only: Barangay Activity Panel -->
+  {% if user.role == 'MHO' %}
+  <div class="panel barangay-panel" style="margin-top: 1.5rem;">
+    <div class="section-head">
+      <span>Barangay activity</span>
+      <a href="{% url 'reports' %}" class="text-btn">
+        Full report
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+    <div class="barangay-bars">
+      {% for item in barangay_data %}
+        <div class="bar-row">
+          <span class="bar-label">{{ item.barangay }}</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: {{ item.pct|default:0 }}%;"></div>
+          </div>
+          <span class="bar-count">{{ item.total }}</span>
         </div>
-    </section>
+      {% empty %}
+        <div class="empty-state">No barangay data available.</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
 </div>
 {% endblock %}

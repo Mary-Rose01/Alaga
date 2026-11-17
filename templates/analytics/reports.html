@@ -1,15 +1,83 @@
 {% extends 'base.html' %}
 {% block title %}Reports & Analytics | ALAGA{% endblock %}
+{% block page_title %}Reports{% endblock %}
 {% block content %}
-<style>
-.page-wrap{max-width:1200px;margin:2rem auto;padding:0 1.25rem;width:100%}.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.5rem}.page-head h1{font-size:1.8rem;color:#0f172a}.muted{color:#64748b}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin:1.2rem 0}.card,.panel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:1.2rem;box-shadow:0 2px 5px #0f172a0a}.card strong{display:block;font-size:1.8rem}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0}.bar-row{display:grid;grid-template-columns:minmax(90px,1fr) 2fr 35px;align-items:center;gap:.7rem;margin:.85rem 0;font-size:.88rem}.track{height:10px;border-radius:99px;background:#f1f5f9;overflow:hidden}.fill{height:100%;background:#0f766e;border-radius:99px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.8rem;border-bottom:1px solid #e2e8f0}th{font-size:.78rem;color:#64748b;text-transform:uppercase}.empty{padding:1.5rem;text-align:center;color:#64748b}.note{font-size:.82rem;color:#64748b;margin-top:.8rem}@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}}@media(max-width:450px){.stats{grid-template-columns:1fr}.page-head{display:block}}
-</style>
-<div class="page-wrap"><div class="page-head"><div><h1>Reports & Analytics</h1><p class="muted">A read-only overview calculated from ALAGA's existing records.</p></div><a class="btn btn-secondary" href="{% url 'home' %}">Back to Dashboard</a></div>
-<div class="stats"><div class="card"><span class="muted">Senior citizens</span><strong>{{ total_seniors }}</strong></div><div class="card"><span class="muted">Recorded visits</span><strong>{{ total_visits }}</strong></div><div class="card"><span class="muted">Male</span><strong>{{ male_count }}</strong></div><div class="card"><span class="muted">Female</span><strong>{{ female_count }}</strong></div></div>
-<div class="two-col"><section class="panel"><h2>Age distribution</h2>{% for label,count in age_counts.items %}<div class="bar-row"><span>{{ label }}</span><div class="track"><div class="fill" style="width:{% if total_seniors %}{% widthratio count total_seniors 100 %}{% else %}0{% endif %}%"></div></div><strong>{{ count }}</strong></div>{% endfor %}</section>
-<section class="panel"><h2>Senior citizens by barangay</h2>{% for row in barangay_data %}<div class="bar-row"><span>{{ row.barangay }}</span><div class="track"><div class="fill" style="width:{% if total_seniors %}{% widthratio row.total total_seniors 100 %}{% else %}0{% endif %}%"></div></div><strong>{{ row.total }}</strong></div>{% empty %}<p class="empty">No barangay data available.</p>{% endfor %}</section></div>
-<div class="two-col"><section class="panel"><h2>Common recorded conditions</h2><div class="table-wrap"><table><thead><tr><th>Condition</th><th>Senior count</th></tr></thead><tbody>{% for row in condition_data %}<tr><td>{{ row.condition__name }}</td><td>{{ row.total }}</td></tr>{% empty %}<tr><td colspan="2" class="empty">No condition records available.</td></tr>{% endfor %}</tbody></table></div></section>
-<section class="panel"><h2>Monthly visits · Last 6 months</h2><div class="table-wrap"><table><thead><tr><th>Month</th><th>Visits</th></tr></thead><tbody>{% for row in monthly_visits %}<tr><td>{{ row.month|date:'F Y' }}</td><td>{{ row.total }}</td></tr>{% empty %}<tr><td colspan="2" class="empty">No visits recorded in this period.</td></tr>{% endfor %}</tbody></table></div><p class="note">Visit totals are based on the visit date recorded in the database.</p></section></div>
-<section class="panel"><h2>Recent health visits</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Senior citizen</th><th>Visit type</th><th>Health worker</th><th>Alert level</th></tr></thead><tbody>{% for visit in recent_visits %}<tr><td>{{ visit.visited_at|date:'M d, Y' }}</td><td>{{ visit.senior.last_name }}, {{ visit.senior.first_name }}</td><td>{{ visit.visit_type|default:'—' }}</td><td>{{ visit.worker.get_full_name|default:visit.worker.username|default:'—' }}</td><td>{{ visit.alert_level|default:'—' }}</td></tr>{% empty %}<tr><td colspan="5" class="empty">No health visits recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Analytics</div>
+    <h1>Reports &amp; Analytics</h1>
+    <p>A read-only overview calculated from ALAGA's existing records.</p>
+  </div>
+  <a href="{% url 'home' %}" class="btn secondary">Back to Dashboard</a>
 </div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="stat-label">Senior citizens</div><div class="stat-value">{{ total_seniors }}</div><div class="stat-sub">Registered records</div></div>
+  <div class="stat-card"><div class="stat-icon sage"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div><div class="stat-label">Recorded visits</div><div class="stat-value">{{ total_visits }}</div><div class="stat-sub">All time</div></div>
+  <div class="stat-card"><div class="stat-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></div><div class="stat-label">Male</div><div class="stat-value">{{ male_count }}</div><div class="stat-sub">Senior citizens</div></div>
+  <div class="stat-card"><div class="stat-icon amber"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></div><div class="stat-label">Female</div><div class="stat-value">{{ female_count }}</div><div class="stat-sub">Senior citizens</div></div>
+</div>
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="section-head"><div><h2>Age distribution</h2><p>Senior citizens by age group</p></div></div>
+    <div class="barangay-bars">
+      {% for label,count in age_counts.items %}
+      <div class="bar-row"><span>{{ label }}</span><div class="bar-track"><i style="width:{% if total_seniors %}{% widthratio count total_seniors 100 %}{% else %}0{% endif %}%"></i></div><b>{{ count }}</b></div>
+      {% endfor %}
+    </div>
+  </section>
+  <section class="panel">
+    <div class="section-head"><div><h2>Senior citizens by barangay</h2><p>Registered seniors by community</p></div></div>
+    <div class="barangay-bars">
+      {% for row in barangay_data %}
+      <div class="bar-row"><span>{{ row.barangay }}</span><div class="bar-track"><i style="width:{% if total_seniors %}{% widthratio row.total total_seniors 100 %}{% else %}0{% endif %}%"></i></div><b>{{ row.total }}</b></div>
+      {% empty %}
+      <div class="empty-state"><b>No barangay data available.</b></div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<div class="dashboard-grid lower-grid">
+  <section class="panel">
+    <div class="section-head"><div><h2>Common recorded conditions</h2><p>Most frequent health background entries</p></div></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Condition</th><th>Senior count</th></tr></thead>
+      <tbody>
+        {% for row in condition_data %}<tr><td><b>{{ row.condition__name }}</b></td><td>{{ row.total }}</td></tr>
+        {% empty %}<tr><td colspan="2"><div class="empty-state"><b>No condition records available.</b></div></td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <section class="panel">
+    <div class="section-head"><div><h2>Monthly visits</h2><p>Last 6 months</p></div></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Month</th><th>Visits</th></tr></thead>
+      <tbody>
+        {% for row in monthly_visits %}<tr><td>{{ row.month|date:'F Y' }}</td><td>{{ row.total }}</td></tr>
+        {% empty %}<tr><td colspan="2"><div class="empty-state"><b>No visits recorded in this period.</b></div></td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+    <p class="form-help">Visit totals are based on the visit date recorded in the database.</p>
+  </section>
+</div>
+
+<section class="panel">
+  <div class="section-head"><div><h2>Recent health visits</h2><p>Latest recorded community visits</p></div></div>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Date</th><th>Senior citizen</th><th>Visit type</th><th>Health worker</th><th>Alert level</th></tr></thead>
+    <tbody>
+      {% for visit in recent_visits %}
+      <tr>
+        <td>{{ visit.visited_at|date:'M d, Y' }}</td>
+        <td><b>{{ visit.senior.last_name }}, {{ visit.senior.first_name }}</b></td>
+        <td>{{ visit.visit_type|default:'—' }}</td>
+        <td>{{ visit.worker.get_full_name|default:visit.worker.username|default:'—' }}</td>
+        <td>{% if visit.alert_level %}<span class="badge {{ visit.alert_level|lower }}">{{ visit.alert_level }}</span>{% else %}—{% endif %}</td>
+      </tr>
+      {% empty %}<tr><td colspan="5"><div class="empty-state"><b>No health visits recorded.</b></div></td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
 {% endblock %}

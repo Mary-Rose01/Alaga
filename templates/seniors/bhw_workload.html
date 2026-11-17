@@ -1,11 +1,111 @@
 {% extends 'base.html' %}
 {% block title %}BHW Workload | ALAGA{% endblock %}
+{% block page_title %}Assignments{% endblock %}
+
 {% block content %}
-<style>
-.page-wrap{max-width:1200px;margin:2rem auto;padding:0 1.25rem;width:100%}.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.5rem}.page-head h1{font-size:1.8rem;color:#0f172a}.muted{color:#64748b}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin:1.2rem 0}.card,.panel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:1.2rem;box-shadow:0 2px 5px #0f172a0a}.card strong{display:block;font-size:1.8rem}.layout{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.5fr);gap:1rem}.field{display:flex;flex-direction:column;gap:.4rem;margin:1rem 0}.field select{padding:.7rem;border:1px solid #cbd5e1;border-radius:8px;background:white}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.8rem;border-bottom:1px solid #e2e8f0}th{font-size:.78rem;color:#64748b;text-transform:uppercase}.empty{text-align:center;padding:1.5rem;color:#64748b}@media(max-width:760px){.grid,.layout{grid-template-columns:1fr}.page-head{display:block}}
-</style>
-<div class="page-wrap"><div class="page-head"><div><h1>BHW Workload & Assignment</h1><p class="muted">Manage active senior citizen assignments across health workers.</p></div><a class="btn btn-secondary" href="{% url 'home' %}">Back to Dashboard</a></div>
-<div class="grid"><div class="card"><span class="muted">Active BHWs</span><strong>{{ total_workers }}</strong></div><div class="card"><span class="muted">Active assignments</span><strong>{{ total_assignments }}</strong></div><div class="card"><span class="muted">Unassigned seniors</span><strong>{{ unassigned_count }}</strong></div></div>
-<div class="layout"><section class="panel"><h2>Assign a senior citizen</h2><p class="muted">Reassigning a senior automatically closes their previous active assignment.</p><form method="post">{% csrf_token %}<div class="field"><label for="senior_id">Senior citizen</label><select id="senior_id" name="senior_id" required><option value="">Choose senior citizen</option>{% for senior in unassigned_seniors %}<option value="{{ senior.pk }}">{{ senior.last_name }}, {{ senior.first_name }}</option>{% endfor %}{% for assignment in assignments %}<option value="{{ assignment.senior_id }}">{{ assignment.senior.last_name }}, {{ assignment.senior.first_name }} (reassign)</option>{% endfor %}</select></div><div class="field"><label for="worker_id">Assign to BHW</label><select id="worker_id" name="worker_id" required><option value="">Choose BHW</option>{% for worker in workers %}<option value="{{ worker.pk }}">{{ worker.get_full_name|default:worker.username }} · {{ worker.active_senior_count }} assigned</option>{% endfor %}</select></div><button class="btn btn-primary" type="submit">Save assignment</button></form></section>
-<section class="panel"><h2>Current assignments</h2><div class="table-wrap"><table><thead><tr><th>Senior citizen</th><th>Barangay</th><th>Assigned BHW</th><th>Assigned date</th></tr></thead><tbody>{% for assignment in assignments %}<tr><td>{{ assignment.senior.last_name }}, {{ assignment.senior.first_name }}</td><td>{{ assignment.senior.barangay|default:'—' }}</td><td>{{ assignment.worker.get_full_name|default:assignment.worker.username }}</td><td>{{ assignment.assigned_at|date:'M d, Y' }}</td></tr>{% empty %}<tr><td colspan="4" class="empty">No active assignments found.</td></tr>{% endfor %}</tbody></table></div></section></div></div>
+<div class="page-header">
+  <div>
+    <div class="eyebrow">WORKFORCE MANAGEMENT</div>
+    <h1>BHW Workload &amp; Assignment</h1>
+    <p>Manage active senior citizen assignments across health workers.</p>
+  </div>
+  <a href="{% url 'home' %}" class="btn secondary">Back to Dashboard</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="stat-label">Active BHWs</div>
+    <div class="stat-value">{{ total_workers }}</div>
+    <div class="stat-sub">Registered health workers</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon sage">
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+    </div>
+    <div class="stat-label">Active Assignments</div>
+    <div class="stat-value">{{ total_assignments }}</div>
+    <div class="stat-sub">Currently monitored seniors</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber">
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+    </div>
+    <div class="stat-label">Unassigned Seniors</div>
+    <div class="stat-value">{{ unassigned_count }}</div>
+    <div class="stat-sub">Awaiting assignment</div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="section-head">
+      <div>
+        <h2>Assign a senior citizen</h2>
+        <p>Reassigning a senior automatically closes their previous active assignment.</p>
+      </div>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <label class="field">
+        <span>Senior citizen</span>
+        <select id="senior_id" name="senior_id" required>
+          <option value="">Choose senior citizen</option>
+          {% for senior in unassigned_seniors %}
+          <option value="{{ senior.pk }}">{{ senior.last_name }}, {{ senior.first_name }}</option>
+          {% endfor %}
+          {% for assignment in assignments %}
+          <option value="{{ assignment.senior_id }}">{{ assignment.senior.last_name }}, {{ assignment.senior.first_name }} (reassign)</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field">
+        <span>Assign to BHW</span>
+        <select id="worker_id" name="worker_id" required>
+          <option value="">Choose BHW</option>
+          {% for worker in workers %}
+          <option value="{{ worker.pk }}">{{ worker.get_full_name|default:worker.username }} · {{ worker.active_senior_count }} assigned</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn primary" type="submit" style="margin-top:.5rem">Save assignment</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="section-head">
+      <div>
+        <h2>Current assignments</h2>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Senior citizen</th>
+            <th>Barangay</th>
+            <th>Assigned BHW</th>
+            <th>Assigned date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for assignment in assignments %}
+          <tr>
+            <td><strong>{{ assignment.senior.last_name }}, {{ assignment.senior.first_name }}</strong></td>
+            <td>{{ assignment.senior.barangay|default:'—' }}</td>
+            <td>{{ assignment.worker.get_full_name|default:assignment.worker.username }}</td>
+            <td>{{ assignment.assigned_at|date:'M d, Y' }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="empty-state">No active assignments found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
 {% endblock %}
