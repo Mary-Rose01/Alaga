@@ -1,6 +1,3 @@
-from django.shortcuts import render
-
-# Create your views here.
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -8,13 +5,90 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 from django.utils import timezone
-from .models import SeniorAssignment, SeniorCitizen
+
+from .forms import SeniorRegistrationForm
+from .models import (
+    ChronicCondition, EmergencyContact, SeniorAllergy, SeniorAssignment,
+    SeniorCitizen, SeniorCondition,
+)
 
 User = get_user_model()
 
 
 def is_mho(user):
     return user.is_authenticated and getattr(user, 'role', '') == 'MHO'
+
+
+@login_required
+def senior_list_view(request):
+    """Registry of senior citizens. BHWs only see their active assignments."""
+    seniors = SeniorCitizen.objects.filter(archived_at__isnull=True)
+    if getattr(request.user, 'role', '') == 'BHW':
+        seniors = seniors.filter(
+            assignments__worker=request.user, assignments__unassigned_at__isnull=True
+        ).distinct()
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        seniors = seniors.filter(
+            Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(osca_id__icontains=q)
+        )
+    barangay = request.GET.get('barangay', '').strip()
+    if barangay:
+        seniors = seniors.filter(barangay=barangay)
+
+    barangays = (
+        SeniorCitizen.objects.exclude(barangay='')
+        .values_list('barangay', flat=True).distinct().order_by('barangay')
+    )
+    return render(request, 'seniors/senior_list.html', {
+        'seniors': seniors.order_by('last_name', 'first_name'),
+        'search_query': q,
+        'selected_barangay': barangay,
+        'barangays': barangays,
+    })
+
+
+@login_required
+def senior_register_view(request):
+    """Register a senior citizen record (separate from BHW/MHO worker registration)."""
+    if request.method == 'POST':
+        form = SeniorRegistrationForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                senior = form.save(commit=False)
+                senior.registered_by = request.user
+                senior.status = 'Active'
+                senior.save()
+
+                cd = form.cleaned_data
+                for name in [c.strip() for c in cd['chronic_conditions'].split(',') if c.strip()]:
+                    condition, _ = ChronicCondition.objects.get_or_create(name=name[:100])
+                    SeniorCondition.objects.get_or_create(senior=senior, condition=condition)
+                for allergen in [a.strip() for a in cd['allergies'].split(',') if a.strip()]:
+                    SeniorAllergy.objects.create(senior=senior, allergen=allergen[:100])
+                if cd['contact_person']:
+                    EmergencyContact.objects.create(
+                        senior=senior,
+                        full_name=cd['contact_person'],
+                        relationship=cd['contact_relationship'],
+                        phone_number=cd['contact_phone'],
+                        is_primary=True,
+                    )
+                # A BHW who registers a senior becomes their primary worker.
+                if getattr(request.user, 'role', '') == 'BHW':
+                    SeniorAssignment.objects.create(
+                        senior=senior, worker=request.user,
+                        assigned_by=request.user, is_primary=True,
+                    )
+            messages.success(request, f'{senior} was registered successfully.')
+            return redirect('senior_list')
+        messages.error(request, 'Please correct the highlighted fields.')
+    else:
+        form = SeniorRegistrationForm(initial={
+            'city_municipality': 'Danao City', 'province': 'Cebu',
+        })
+    return render(request, 'seniors/senior_register.html', {'form': form})
 
 
 @login_required
