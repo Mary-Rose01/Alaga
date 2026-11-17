@@ -4,6 +4,9 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    initSidebar();
+    initPopovers();
+    initAlertDismiss();
     initPasswordToggles();
     initRegistrationValidation();
     initFormSubmissionSpinners();
@@ -106,5 +109,60 @@ function initFormSubmissionSpinners() {
             submitBtn.style.pointerEvents = 'none';
             submitBtn.setAttribute('disabled', 'true');
         });
+    });
+}
+
+
+/**
+ * 4. Sidebar collapse toggle (remembers state)
+ */
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.getElementById('sidebarToggle');
+    if (!sidebar || !toggle) return;
+
+    if (localStorage.getItem('alagaSidebar') === 'collapsed') {
+        sidebar.classList.add('sidebar-collapsed');
+    }
+    toggle.addEventListener('click', () => {
+        const collapsed = sidebar.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('alagaSidebar', collapsed ? 'collapsed' : 'expanded');
+    });
+}
+
+/**
+ * 5. Notification & user menu popovers (close on outside click / Escape)
+ */
+function initPopovers() {
+    const pairs = [
+        [document.getElementById('notifBtn'), document.getElementById('notifPanel')],
+        [document.getElementById('userMenuBtn'), document.getElementById('userMenuPanel')],
+    ].filter(([btn, panel]) => btn && panel);
+
+    const closeAll = () => pairs.forEach(([, panel]) => { panel.style.display = 'none'; });
+
+    pairs.forEach(([btn, panel]) => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const wasOpen = panel.style.display === 'block';
+            closeAll();
+            panel.style.display = wasOpen ? 'none' : 'block';
+        });
+        panel.addEventListener('click', (e) => e.stopPropagation());
+    });
+
+    const closeNotif = document.getElementById('closeNotif');
+    if (closeNotif) closeNotif.addEventListener('click', closeAll);
+
+    document.addEventListener('click', closeAll);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
+}
+
+/**
+ * 6. Auto-dismiss flash messages
+ */
+function initAlertDismiss() {
+    document.querySelectorAll('.alert').forEach((alert) => {
+        setTimeout(() => alert.remove(), 5000);
     });
 }
