@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Register Senior Citizen | ALAGA{% endblock %}
+{% block page_title %}Register Senior{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Senior citizen registry</div>
+    <h1>Register new senior</h1>
+    <p>Add a senior citizen record to the community registry. This is not a worker account.</p>
+  </div>
+</div>
+
+{% if form.errors %}
+<div class="alert alert-error"><span>Please review the fields marked below. Required fields are marked *.</span></div>
+{% endif %}
+
+<form method="POST" action="{% url 'senior_register' %}" id="seniorForm" novalidate>
+  {% csrf_token %}
+  <div class="form-layout">
+    <div class="panel step-panel">
+      <div class="steps" id="stepList">
+        <div class="step"><span>1</span><div><b>Personal information</b><small></small></div></div>
+        <div class="step"><span>2</span><div><b>Identification &amp; address</b><small></small></div></div>
+        <div class="step"><span>3</span><div><b>Emergency contact</b><small></small></div></div>
+        <div class="step"><span>4</span><div><b>Health background</b><small></small></div></div>
+        <div class="step"><span>5</span><div><b>Consent &amp; review</b><small></small></div></div>
+      </div>
+      <div class="step-note">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Personal information is handled with care. Only collect details needed for community care coordination.</span>
+      </div>
+    </div>
+
+    <div class="panel form-panel">
+      <div class="form-title">
+        <div><span class="eyebrow" id="stepEyebrow">STEP 1 OF 5</span><h2 id="stepTitle">Personal information</h2></div>
+        <span class="subtle-tag">Required fields marked *</span>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="wizard-step" data-step="0" data-title="Personal information">
+        <div class="form-grid">
+          <div class="field"><span>First name *</span>{{ form.first_name }}{{ form.first_name.errors }}</div>
+          <div class="field"><span>Middle name</span>{{ form.middle_name }}</div>
+          <div class="field"><span>Last name *</span>{{ form.last_name }}{{ form.last_name.errors }}</div>
+          <div class="field"><span>Suffix</span>{{ form.suffix }}</div>
+          <div class="field"><span>Date of birth *</span>{{ form.birth_date }}<small class="field-hint" id="ageHint"></small>{{ form.birth_date.errors }}</div>
+          <div class="field"><span>Sex *</span>{{ form.sex }}{{ form.sex.errors }}</div>
+          <div class="field"><span>Civil status</span>{{ form.civil_status }}</div>
+          <div class="field"><span>Blood type</span>{{ form.blood_type }}</div>
+          <div class="field"><span>Living arrangement</span>{{ form.living_arrangement }}</div>
+          <div class="field"><span>Contact number</span>{{ form.contact_number }}</div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="wizard-step" data-step="1" data-title="Identification &amp; address" hidden>
+        <div class="form-grid">
+          <div class="field"><span>OSCA ID</span>{{ form.osca_id }}{{ form.osca_id.errors }}</div>
+          <div class="field"><span>PhilHealth number</span>{{ form.philhealth_number }}{{ form.philhealth_number.errors }}</div>
+          <div class="field full"><span>House / street</span>{{ form.street_address }}</div>
+          <div class="field"><span>Barangay *</span>{{ form.barangay }}{{ form.barangay.errors }}</div>
+          <div class="field"><span>Municipality / city</span>{{ form.city_municipality }}</div>
+          <div class="field"><span>Province</span>{{ form.province }}</div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="wizard-step" data-step="2" data-title="Emergency contact" hidden>
+        <div class="form-grid">
+          <div class="field"><span>Contact person</span>{{ form.contact_person }}</div>
+          <div class="field"><span>Relationship</span>{{ form.contact_relationship }}</div>
+          <div class="field"><span>Phone number</span>{{ form.contact_phone }}</div>
+        </div>
+        <p class="form-help">Additional contacts can be added after saving.</p>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="wizard-step" data-step="3" data-title="Health background" hidden>
+        <div class="form-grid">
+          <div class="field"><span>Chronic conditions (comma separated)</span>{{ form.chronic_conditions }}</div>
+          <div class="field"><span>Allergies (comma separated)</span>{{ form.allergies }}</div>
+        </div>
+        <p class="form-help">Health information is optional and does not provide a diagnosis.</p>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="wizard-step" data-step="4" data-title="Consent &amp; review" hidden>
+        <div class="review-box">
+          <h3>Privacy, consent &amp; review</h3>
+          <p>Before submitting, confirm that the applicable information has been explained and recorded by the responsible worker.</p>
+          <div class="consent-row">{{ form.consent }}<span>I confirm that the applicable consent information for health monitoring and care coordination has been recorded.</span></div>
+          {{ form.consent.errors }}
+          <div class="review-summary" id="reviewSummary"></div>
+        </div>
+      </div>
+
+      <div class="form-footer">
+        <button type="button" class="btn secondary" id="prevBtn">Cancel</button>
+        <div class="footer-right">
+          <span class="step-count" id="stepCount">1 of 5</span>
+          <button type="button" class="btn primary" id="nextBtn">Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const steps = [...document.querySelectorAll('.wizard-step')];
+  const items = [...document.querySelectorAll('#stepList .step')];
+  const prev = document.getElementById('prevBtn');
+  const next = document.getElementById('nextBtn');
+  const form = document.getElementById('seniorForm');
+  const last = steps.length - 1;
+  let current = 0;
+
+  function ageOf(v) {
+    if (!v) return null;
+    const b = new Date(v), t = new Date();
+    let a = t.getFullYear() - b.getFullYear();
+    if (t.getMonth() < b.getMonth() || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) a--;
+    return a;
+  }
+
+  function show(i) {
+    current = i;
+    steps.forEach((s, n) => { s.hidden = n !== i; });
+    items.forEach((el, n) => {
+      el.classList.toggle('current', n === i);
+      el.classList.toggle('done', n < i);
+      el.querySelector('small').textContent = n === i ? 'In progress' : n < i ? 'Completed' : 'Not started';
+      el.querySelector('span').textContent = n < i ? '✓' : n + 1;
+    });
+    document.getElementById('stepEyebrow').textContent = 'STEP ' + (i + 1) + ' OF 5';
+    document.getElementById('stepTitle').innerHTML = steps[i].dataset.title;
+    document.getElementById('stepCount').textContent = (i + 1) + ' of 5';
+    prev.textContent = i === 0 ? 'Cancel' : 'Previous';
+    next.textContent = i === last ? 'Submit registration' : 'Continue';
+    if (i === last) buildReview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function valid(i) {
+    for (const el of steps[i].querySelectorAll('input, select, textarea')) {
+      if (el.name === 'consent') continue;
+      if (!el.checkValidity()) { el.reportValidity(); return false; }
+    }
+    if (i === 0) {
+      const a = ageOf(form.birth_date.value);
+      if (a === null || a < 60) { alert('Senior citizens must be at least 60 years old.'); return false; }
+    }
+    return true;
+  }
+
+  function buildReview() {
+    const box = document.getElementById('reviewSummary');
+    const name = [form.first_name.value, form.last_name.value].join(' ');
+    box.innerHTML = '';
+    [name, (ageOf(form.birth_date.value) || '—') + ' years old · ' + (form.barangay.value || '—'),
+     form.chronic_conditions.value || 'No health background supplied'].forEach((t, n) => {
+      const el = document.createElement(n === 0 ? 'b' : 'span'); el.textContent = t; box.appendChild(el);
+    });
+  }
+
+  prev.addEventListener('click', () => {
+    if (current === 0) window.location.href = "{% url 'senior_list' %}"; else show(current - 1);
+  });
+  next.addEventListener('click', () => {
+    if (!valid(current)) return;
+    if (current === last) {
+      if (!form.consent.checked) { alert('Please confirm the consent statement.'); return; }
+      form.submit();
+    } else show(current + 1);
+  });
+  form.birth_date.addEventListener('input', () => {
+    const a = ageOf(form.birth_date.value);
+    document.getElementById('ageHint').textContent =
+      a === null ? '' : 'Calculated age: ' + a + ' years' + (a < 60 ? ' — must be at least 60' : '');
+  });
+
+  // If the server returned errors, jump to the first step containing one.
+  const bad = steps.findIndex(s => s.querySelector('.errorlist'));
+  show(bad >= 0 ? bad : 0);
+})();
+</script>
+{% endblock %}
+
